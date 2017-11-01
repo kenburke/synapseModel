@@ -29,7 +29,7 @@ def runModel(params=None):
                                     ### General Simulation Params
             "fs" : 2e4,             # per second
             "sweep_length" : 1,     # seconds
-            "num_trial" : 1000,     # number of simulation trials to run
+            "num_trials" : 1000,     # number of simulation trials to run
             "num_stim" : 2,         # number of AP stimuli to run
             "stim_int" : 0.05,      # interval of AP stimuli (sec)
             "stim1_time" : 0.1,     # time of first stimulus (sec)
@@ -69,33 +69,54 @@ def runModel(params=None):
     FS = float(params["fs"])
     dt = 1./FS
     no_samples = FS*params["sweep_length"]
+    no_trials = params["num_trials"]
+    no_stims = params["num_stim"]
     time = np.arange(no_samples)*dt
+    
     
     # array of AP times    
     ap_times = np.zeros(no_samples)
+    ap_inds = np.zeros(no_stims)
     
-    i = 0.
-    
-    while i < params["num_stim"]:
+    for i in range(no_stims):
         curr_stim_time = params["stim1_time"] + i * params["stim_int"]
-        print(curr_stim_time)
+        curr_ind = math.floor(curr_stim_time*FS)
         try:
-            ap_times[math.floor(curr_stim_time*FS)] = 1
+            ap_times[curr_ind] = 1
+            ap_inds[i] = curr_ind
         except IndexError as err:
             print("INDEXERROR: {0}".format(err))
             print("Stimulation parameters may exceed length of sweep")
             return
-        i += 1
     
-    ap_inds = np.where(ap_times==1)
-    
+    # define an MxN matrix, where
+    #   - M = length of one trace
+    #   - N = number of trials
+    # such that each column represents a sum of Kronecker delta functions
+    # indicating the timing of _successful_ CaV opening
+    #
+    # repeated N times, where N is the number of channels, and summed
+    # this represents all trials, stimulations and CaV's being independent
+
+    cav_activity = np.zeros((no_samples,no_trials))
+
+    for i in range(params["num_cav"]):
+        cav_successes = np.random.uniform(size=(no_stims,no_trials)) < params["cav_p_open"] 
+        cav_inds = np.array(np.where(cav_successes))
+        rows = ap_inds[cav_inds[0,:]]
+        cols = cav_inds[1,:]
+        cav_activity[rows,cols] += params["cav_i"]
+
+    print("out of loop")
+
     # define exponential decay as [Ca] kernel
     ca_kernel = np.exp(-time/params["ca_decay"])
-    
-    # generate [Ca](t), crop for sweep length (note, time of peaks = ap_inds)
-    Ca_t = np.resize(np.convolve(ap_times,ca_kernel),len(ap_times))
-    
-    
+
+    # generate [Ca](t,trial) by convolving against cav_activity
+    # crop for sweep length (note, time of peaks = ap_inds)
+
+    Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, arr=cav_activity)
+    Ca_t = Ca_t[0:len(time),:]
 
 def hill(ca,S=1,ec50=0.8,n=3.72)
     """
