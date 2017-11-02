@@ -1,4 +1,6 @@
 import sys
+import numpy as np
+import matplotlib.pyplot as plt
 from .io import write_results, load_input_pickle, dumpclean
 from .model import runModel
 
@@ -22,18 +24,23 @@ elif sys.argv[1][0:2] == '-M':
     print("----")   
     print("Running simulation with user-definied params:")
 
+elif sys.argv[1][0:2] == '-K':
+    print("Option: Running with defaults")
+    
 else:
     print("Usage: python -m synapse [-P| -N| -I] <input directory> <output file>")
     sys.exit(0)
 
 
 print("")
-dumpclean(params)
+#dumpclean(params)
 print("----")   
-sim = runModel(params)
+#sim = runModel(params)
+Vm_t = runModel()
+print("")
 print("----")   
 print("")
-print("Writing Output to"+sys.argv[2])
-write_results(sim, sys.argv[2])
+print("Writing Output to "+sys.argv[2])
+#write_results(sim, sys.argv[2])
 print("")
 print("Done")
