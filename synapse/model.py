@@ -2,7 +2,6 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 from .io import load_input_pickle, save_input_pickle, load_output_pickle, save_output_pickle
-from .utils import simulation_run
 
 
 def runModel(params):
@@ -34,7 +33,7 @@ def runModel(params):
         
     """
     
-    print("Checking Parameters...")
+#    print("Checking Parameters...")
 
     if params["sweep_length"]<(params["stim1_time"] + params["stim_int"]*(params["num_stim"]-1)):
         # sweep length too short
@@ -75,30 +74,12 @@ def runModel(params):
     # Simulate Calcium Channel Opening #
     ####################################
 
-    print("Simulating Calcium Channel Opening...")
+#     print("Simulating Calcium Channel Opening...")
 
-    # define an MxNxO matrix, where
-    #   - M = length of one trace
-    #   - N = number of trials
-    #   - O = number of synapses / active zones
-    # such that each column represents a sum of Kronecker delta functions
-    # indicating the timing of _successful_ CaV opening
-    #
-    # repeated N times, where N is the number of channels, and summed
-    # this represents all trials, stimulations and CaV's being independent
-
-#   cav_activity = np.zeros(np.array([no_samples,no_trials,no_syn]).astype(int))
     cav_openings = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
 
     for i in range(params["num_cav"]):
         cav_successes = np.random.uniform(size=(no_stims,no_trials,no_syn)) < params["cav_p_open"] 
- #      cav_inds = np.array(np.where(cav_successes))
-#       rows, cols, chunks = (
-            ap_inds[cav_inds[0,:]],
-            cav_inds[1,:],
-            cav_inds[2,:]
-            )
-#       cav_activity[rows.astype(int),cols.astype(int),chunks.astype(int)] += params["cav_i"]
         cav_openings += cav_successes*params["cav_i"]    
 
     # define exponential decay as [Ca] kernel
@@ -114,7 +95,7 @@ def runModel(params):
     # Simulate Ca-Dependent Vesicle Release #
     #########################################
 
-    print("Simulating [Ca]-Dependent Vesicle Release...")
+#     print("Simulating [Ca]-Dependent Vesicle Release...")
 
     # apply hill function to obtain probability of vesicle release
     p_v = hill(Ca_t,S=1,ec50=params["ca_ec50"],n=params["ca_coop"])
@@ -134,7 +115,7 @@ def runModel(params):
         # Simulate Vesicular Depletion #
         ################################
         
-        print("Simulating Vesicular Depletion...")
+#         print("Simulating Vesicular Depletion...")
         
         # Now, release_successes must be multiplied by whether or not a vesicle is present
         # So we must model the readily-releasable pool and its depletion / replenishment
@@ -180,7 +161,7 @@ def runModel(params):
     # Simulate AMPA Responses #
     ###########################    
 
-    print("Simulating AMPA Responses...")
+#     print("Simulating AMPA Responses...")
 
     # obtain total quantal content per trial (sum across synapses)
     # in order to obtain total EPSC
@@ -196,9 +177,11 @@ def runModel(params):
     #####################
     # Packaging Results #
     #####################   
-
+    
+#     print("Packaging Results....")
     
     data = {
+        "params" : params,
         "time" : time,
         "ap_times" : ap_times,
         "ap_inds" : ap_inds,
@@ -216,43 +199,6 @@ def runModel(params):
     sim_run = simulation_run(data)
     
     return sim_run
-
-
-### GETTING [Ca](t) (instead of [Ca](stim_num))
-#    # define exponential decay as [Ca] kernel
-#    ca_kernel = np.exp(-time/params["ca_decay"])
-
-#    # generate [Ca](t,trial) by convolving against cav_activity
-#    # crop for sweep length (note, time of peaks = ap_inds)
-
-#     Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, arr=cav_activity)
-#     Ca_t = Ca_t[0:len(time),:,:]
-
-### GETTING EPSC(t) (instead of EPSC_Amp(stim_num))
-#    # obtain total quantal content per trial (sum across synapses)
-#    # obtain release inds and plug in quantal content into epsc_activity
-#
-#     content_inds = np.array(np.where(quantal_content>0))
-#     rows,cols = (ap_inds[content_inds[0,:]],content_inds[1,:])
-#     
-#     epsc_activity = np.zeros(np.array([no_samples,no_trials]).astype(int))
-#     epsc_activity[rows.astype(int),cols.astype(int)] = quantal_content[
-#         content_inds[0,:].astype(int),
-#         content_inds[1,:].astype(int)
-#         ]
-#     
-#     ###########################
-#     # Simulate AMPA Responses #
-#     ###########################    
-#     
-#     print("Simulating AMPA Responses...")
-# 
-#     # define AMPA kernel
-#     ampa_kernel = ampa(time,quantal_size=params["quantal_size"],tau=params["a_tau"])
-#     
-#     Vm_t = np.apply_along_axis(lambda m: np.convolve(m,ampa_kernel), axis=0, arr=epsc_activity)
-#     Vm_t = Vm_t[0:len(time),:]
-
 
 
 def hill(ca,S=1,ec50=0.67,n=3.72):
@@ -289,4 +235,17 @@ def ampa(time,quantal_size=-5,tau=(1/1000,5/1000)):
     i_ampa *= quantal_size/max(i_ampa)
     
     return i_ampa
+
+class simulation_run:
+    """
+    A simple class for storing data (and parameters) from a simulation run
+    """
+
+    def __init__(self, data):
+        for key,value in data.items():
+            setattr(self,key,value)
+    
+    def update(self,newdata):
+        for key,value in newdata:
+            setattr(self,key,value)
 

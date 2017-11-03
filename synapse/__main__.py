@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from .io import write_results, load_input_pickle, dumpclean
+from .utils import Simulation
 from .model import runModel
 
 # Some quick stuff to make sure the program is called correctly
@@ -33,12 +34,27 @@ else:
 
 
 print("")
-#dumpclean(params)
-print("----")   
-epsc_ave = runModel()
+print("----")
+print("Initializing Simulation")
+print("")
+SIM = Simulation()
 print("")
 print("----")   
 print("")
+SIM.i_mod,mod = SIM.run_modulation(parameter="cav_i",mod_range=[(x+3)/10 for x in range(8)])
+print("")
+print("")
+print("----")   
+print("")
+amp,ppr,cv = SIM.run_analysis(SIM.i_mod)
+for i in range(len(mod)):
+    print(mod[i])
+    print(amp[i]/amp[7])
+    print(ppr[i]/ppr[7])
+    print(cv[i]/cv[7])
+    print("")
+print("----")   
+print("Done")
 print("Writing Output to "+sys.argv[2])
 #write_results(sim, sys.argv[2])
 print("")
