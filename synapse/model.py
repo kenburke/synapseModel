@@ -34,7 +34,7 @@ def runModel(params):
     """
     
 #    print("Checking Parameters...")
-
+    
     if params["sweep_length"]<(params["stim1_time"] + params["stim_int"]*(params["num_stim"]-1)):
         # sweep length too short
         print("Stimulation parameters may exceed length of sweep")
@@ -78,9 +78,9 @@ def runModel(params):
 
     cav_openings = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
 
-    for i in range(params["num_cav"]):
+    for i in range(params["num_cav"]*params["num_cav_ratio"]):
         cav_successes = np.random.uniform(size=(no_stims,no_trials,no_syn)) < params["cav_p_open"] 
-        cav_openings += cav_successes*params["cav_i"]    
+        cav_openings += cav_successes*params["cav_i"]/params["num_cav_ratio"]    
 
     # define exponential decay as [Ca] kernel
     ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
@@ -102,10 +102,13 @@ def runModel(params):
 
     # extract values corresponding to action-potential timepoints
     # multiplied by CaV opening success/failure (to prevent vesicle
-    # release due purely to residual calcium)
-    # then randomly sample to generate quantal events
+    # release due purely to residual calcium).
+    # Also multiply by a scaling factor that indicates the probability
+    # that the vesicle is nearby the calcium channel cluster
 
-    corrected_p = p_v*cav_successes
+    corrected_p = p_v*cav_successes*params["vesicle_prox"]
+    
+    # then randomly sample to generate quantal events
     p_v_successes = (np.random.uniform(size=corrected_p.shape) < corrected_p)*1
 
 
@@ -201,7 +204,7 @@ def runModel(params):
     return sim_run
 
 
-def hill(ca,S=1,ec50=0.67,n=3.72):
+def hill(ca,S=1,ec50=0.7,n=3.72):
     """
 
     Hill function
