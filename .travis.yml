@@ -36,7 +36,7 @@ install:
     - conda info -a
 
     - conda env create
-    - source activate sortingAlgorithms
+    - source activate synapseModel
 
 # run tests
 script:
