@@ -1,4 +1,3 @@
-from clustering import io
 import pytest
 import os
 

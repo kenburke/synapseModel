@@ -4,6 +4,7 @@ import copy
 from random import random, seed
 from math import floor
 import pytest
+import itertools
 
 params_base = {
                                 ### General Simulation Params
@@ -55,29 +56,39 @@ params_base = {
     }
     
 
+parameter_sets = [
+    [0,0.01,0.83,0.99,1],   #cav_p_open
+    [0,1,10,300],   #num_trials
+    [0,1,2,5],  #num_stim
+    [0,1,3],    #num_cav
+    [0,0.1,1],  #cav_i
+    [0,0.5,1,2],    #num_cav_ratio
+    [0,0.01,0.25,1],    #vesicle_prox
+    [True,False]    #depletion_on
+    ]
+    
+parameter_names = [
+    "cav_p_open",
+    "num_trials",
+    "num_stim",
+    "num_cav",
+    "cav_i",
+    "num_cav_ratio",
+    "vesicle_prox",
+    "depletion_on"
+    ]
+    
+parameter_combos = list(itertools.product(*parameter_sets))
 
-@pytest.mark.parametrize("cav_p_open", [0,0.01,0.83,0.99,1])
-@pytest.mark.parametrize("num_trials", [0,1,10,300])
-@pytest.mark.parametrize("num_stim", [0,1,2,5])
-@pytest.mark.parametrize("num_cav", [0,1,3])
-@pytest.mark.parametrize("cav_i", [0,0.1,1])
-@pytest.mark.parametrize("num_cav_ratio", [0,0.5,1,2])
-@pytest.mark.parametrize("vesicle_prox", [0,0.01,0.25,1])
-@pytest.mark.parametrize("depletion_on", [True,False])
+@pytest.mark.parametrize("input_variation", parameter_combos)
 
 
-def test_runModel(params_base):
+def test_runModel(params_base,input_variation,parameter_names):
 
     alt_params = copy.deepcopy(params_base)
     
-    alt_params["cav_p_open"] = cav_p_open
-    alt_params["num_trials"] = num_trials
-    alt_params["num_stim"] = num_stim
-    alt_params["num_cav"] = num_cav
-    alt_params["cav_i"] = cav_i
-    alt_params["num_cav_ratio"] = num_cav_ratio
-    alt_params["vesicle_prox"] = vesicle_prox
-    alt_params["depletion_on"] = depletion_on
+    for i in len(input_variation):
+        alt_params[parameter_names[i]] = input_variation[i]
 
     SIM = utils.Simulation(params = alt_params)
 
