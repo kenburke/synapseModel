@@ -1,9 +1,12 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from .io import write_results, load_input_pickle, dumpclean
+from .io import write_results, load_input_pickle, get_user_params, dumpclean
 from .utils import Simulation
 from .model import runModel
+
+print("")
+print("")
 
 # Some quick stuff to make sure the program is called correctly
 if len(sys.argv) != 3:
@@ -29,7 +32,7 @@ elif sys.argv[1][0:2] == '-K':
     print("Option: Running with defaults")
     
 else:
-    print("Usage: python -m synapse [-P| -N| -I] <input directory> <output file>")
+    print("Usage: python -m synapse [-L| -M] <output file>")
     sys.exit(0)
 
 
@@ -38,34 +41,49 @@ print("----")
 print("Initializing Simulation")
 print("")
 SIM = Simulation()
-print("")
 print("----")   
 print("")
-num_cav_ratio_mod = [1,3,5,7,10,20,50,100]
-mod_range = [0.6,1.0]
+num_cav_ratio_mod = [1,2,3,5,7,10,20,50,100]
+mod_range = (np.arange(10)+1)*0.1
 cv_runs = np.zeros((len(mod_range),len(num_cav_ratio_mod)))
 ppr_runs = np.zeros((len(mod_range),len(num_cav_ratio_mod)))
 amp_runs = np.zeros((len(mod_range),len(num_cav_ratio_mod)))
 
 for i in range(len(num_cav_ratio_mod)):
     print("")
-    print("----")   
     print("num_cav_ratio = {0}".format(num_cav_ratio_mod[i]))   
-    print("----")   
     print("")
     SIM.params["num_cav_ratio"] = num_cav_ratio_mod[i]
     SIM.mod_runs,mod = SIM.run_modulation(parameter="cav_p_open",mod_range=mod_range)
     print("")
     print("")
     print("----")   
-    print("")
     r = len(mod)-1
     amp,ppr,cv = SIM.run_analysis(SIM.mod_runs)
     print("PPR = {0}".format(ppr))
+    print("")
+    print("----")   
     for j in range(len(mod_range)):
         ppr_runs[j,i] = ppr[j]
         amp_runs[j,i] = amp[j]
         cv_runs[j,i] = cv[j]
+
+for i in range(len(num_cav_ratio_mod)):
+    plt.plot(amp_runs[:,i]/amp_runs[r,i],ppr_runs[:,i]/ppr_runs[r,i])
+plt.show()  
+  
+for i in range(len(num_cav_ratio_mod)):
+    plt.plot(amp_runs[:,i]/amp_runs[r,i],cv_runs[:,i]/cv_runs[r,i])
+plt.show()    
+
+print(plt.rcParams['axes.prop_cycle'].by_key()['color'])
+
+
+# for j in range(len(mod_range)):
+#     ppr_runs[j,i] = ppr[j]
+#     amp_runs[j,i] = amp[j]
+#     cv_runs[j,i] = cv[j]
+
 
 # plt.plot(num_cav_ratio_mod,ppr_runs[0,:])
 # plt.plot(num_cav_ratio_mod,ppr_runs[1,:])
@@ -75,9 +93,9 @@ for i in range(len(num_cav_ratio_mod)):
 # plt.show()
 # plt.plot(amp_runs[0,:]/amp_runs[1,:],ppr_runs[0,:]/ppr_runs[1,:])
 # plt.show()
-plt.plot(num_cav_ratio_mod,ppr_runs[0,:]/ppr_runs[1,:])
-plt.show()
-
+# plt.plot(num_cav_ratio_mod,ppr_runs[0,:]/ppr_runs[1,:])
+# plt.show()
+# 
 # for i in range(len(mod)):
 #     print(mod[i])
 #     print(amp[i]/amp[r])

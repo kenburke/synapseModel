@@ -26,7 +26,7 @@ class Simulation:
 
                 "fs" : 2e4,                 # per second
                 "sweep_length" : 1,         # seconds
-                "num_trials" : 10000,       # number of simulation trials to run
+                "num_trials" : 300,         # number of simulation trials to run
                 "num_stim" : 2,             # number of AP stimuli to run
                 "stim_int" : 0.05,          # interval of AP stimuli (sec)
                 "stim1_time" : 0.1,         # time of first stimulus (sec)
@@ -40,7 +40,7 @@ class Simulation:
                 "cav_p_open" : 0.83,        # probability of CaV opening per AP
                 "cav_i" : 1,                # single CaV current per AP (arbitrary units)
                 "ca_decay" : 0.05,          # exponential decay time constant for [ca]
-                "num_cav_ratio" : 1,        # mult num_cav and divide cav_i by this
+                "num_cav_ratio" : 2,        # mult num_cav and divide cav_i by this
 
                                             ### Transmission / Hill Function Params
                 "vesicle_prox" : 0.25,      # Probability your vesicle is nearby the CaV complex
@@ -76,7 +76,6 @@ class Simulation:
         
         print("")
         print("Running Model with Default Parameters...")
-        print("")
         self.default_runs.append(self.run_default())
 
 
@@ -95,10 +94,8 @@ class Simulation:
         """
         sim_runs = []
  
-        print("----")
         print("Running Modulation of "+parameter+" for range:")
         print(mod_range)
-        print("...")
         print("")
 
         for x in range(len(mod_range)):
@@ -121,6 +118,9 @@ class Simulation:
         
         if sim_runs is None:
             sim_runs = self.default_runs
+            
+        print("Running Analysis:")
+        print("")
         
         amp = np.zeros(len(sim_runs))
         ppr = np.zeros(len(sim_runs))
@@ -139,7 +139,7 @@ class Simulation:
 #             plt.plot(curr.time,mean_epsc[i])
 
         beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
-        beep(5)
+        beep(1)
 #         plt.ylabel('Membrane Current (pA)')
 #         plt.xlabel('Time, seconds')
 #         plt.title('Mean EPSC (across trials)')

@@ -22,6 +22,8 @@ def write_results(simulation, output_file):
         - "simulation" object from model.runModel
     """
 
+def get_user_params():
+    return
 
 def dumpclean(obj):
     if type(obj) == dict:
