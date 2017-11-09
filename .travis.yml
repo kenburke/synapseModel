@@ -1,0 +1,43 @@
+# python of course and get sudo
+language: python
+sudo: required
+
+# emails are annoying
+notifications:
+    email: false
+
+# build on Ubuntu 14.04 because the default is
+# really old
+os: linux
+dist: trusty
+
+# test on the latest version of python, even though developed on 3.5
+python:
+    - "3.6"
+
+# only run travis on the master branch
+branches:
+    only:
+        - master
+
+# install dependencies listed in requirements
+before_install:
+    - sudo apt-get update
+
+install: 
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    # Useful for debugging any issues with conda
+    - conda info -a
+
+    - conda env create
+    - source activate sortingAlgorithms
+
+# run tests
+script:
+    "python -m pytest -v test/*"
