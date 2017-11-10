@@ -79,7 +79,7 @@ parameter_names = [
 parameter_ranges = dict(zip(parameter_names,parameter_sets))
 
 @pytest.mark.parametrize("parameter_names", parameter_names)
-def test_runModel_range_params(parameter_ranges,parameter_names,params_base):
+def test_runModel_range_params(parameter_names,parameter_ranges,params_base):
 
     alt_params = copy.deepcopy(params_base)
     p_range = parameter_ranges[parameter_names]
