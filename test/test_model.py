@@ -57,14 +57,13 @@ params_base = {
     
 
 parameter_sets = [
-    [0,0.01,0.83,0.99,1],   #cav_p_open
+    [0,0.01,0.99,1],   #cav_p_open
     [0,1,10,300],   #num_trials
     [0,1,2,5],  #num_stim
-    [0,1,3],    #num_cav
-    [0,0.1,1],  #cav_i
+    [0,1,3,10],    #num_cav
+    [0,1,5,10],  #cav_i
     [0,0.5,1,2],    #num_cav_ratio
     [0,0.01,0.25,1],    #vesicle_prox
-    [True,False]    #depletion_on
     ]
     
 parameter_names = [
@@ -75,21 +74,27 @@ parameter_names = [
     "cav_i",
     "num_cav_ratio",
     "vesicle_prox",
-    "depletion_on"
     ]
-    
-parameter_combos = list(itertools.product(*parameter_sets))
 
-@pytest.mark.parametrize("input_variation", parameter_combos)
+parameter_ranges = dict(zip(parameter_names,parameter_sets))
 
-
-def test_runModel(params_base,input_variation,parameter_names):
+@pytest.mark.parametrize("parameter_names", parameter_names,params_base)
+def test_runModel_range_params(parameter_ranges,parameter_names):
 
     alt_params = copy.deepcopy(params_base)
+    p_range = parameter_ranges[parameter_names]
     
-    for i in len(input_variation):
-        alt_params[parameter_names[i]] = input_variation[i]
+    for i in len(p_range):
+        alt_params[parameter_names] = p_range[i]
+        SIM = utils.Simulation(params = alt_params)
 
+
+def test_runModel_combo_params(parameter_names,parameter_sets,params_base):
+    
+    inds = np.floor(np.random.uniform([len(x) for x in parameter_sets]))
+    alt_params = copy.deepcopy(params_base)
+    
+    for i in len(parameter_names):
+        alt_params[parameter_names[i]] = parameter_sets[i][inds[i]]
+    
     SIM = utils.Simulation(params = alt_params)
-
-
