@@ -45,6 +45,18 @@ def runModel(params):
         else:
             print("unable to correct, exiting simulation")
             return
+    
+    if params["num_stim"]>=1 & params["num_cav_ratio"]>=1 & params["num_trials"]>=1:
+        params["num_stim"] = int(np.floor(params["num_stim"]))
+        params["num_cav_ratio"] = int(np.floor(params["num_cav_ratio"]))
+        params["num_trials"] = int(np.floor(params["num_trials"]))
+    else:
+        print("ERROR: Must specificy >= 1 for number of stimuli, num/cav ratio and num_trials")
+        raise
+        
+    if not 0<=params['cav_p_open']<=1 or not 0<=params['vesicle_prox']<=1:
+        print("ERROR: Must set probabilities cav_p_open and vesicle_prox on range 0<=p<=1")
+        raise
 
 
     FS = float(params["fs"])
@@ -77,7 +89,8 @@ def runModel(params):
 #     print("Simulating Calcium Channel Opening...")
 
     cav_openings = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
-
+    cav_successes = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
+    
     for i in range(params["num_cav"]*params["num_cav_ratio"]):
         cav_successes = np.random.uniform(size=(no_stims,no_trials,no_syn)) < params["cav_p_open"] 
         cav_openings += cav_successes*params["cav_i"]/params["num_cav_ratio"]    

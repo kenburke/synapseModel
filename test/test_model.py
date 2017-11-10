@@ -9,7 +9,6 @@ import itertools
 @pytest.fixture
 def param_base():
     '''Dict of parameter defaults'''
-
     return {
                                     ### General Simulation Params
 
@@ -60,51 +59,38 @@ def param_base():
         }
     
 
-
-@pytest.fixture
 def param_ranges():
-    '''Dict of parameter ranges'''
-    p_name = [
+    '''list of tuples of parameter values over a range'''
+
+    n = [
         "cav_p_open",
         "num_trials",
         "num_stim",
         "num_cav",
         "cav_i",
         "num_cav_ratio",
-        "vesicle_prox",
+        "vesicle_prox"
         ]
-    p_sets = [
-        [0,0.01,0.99,1],   #cav_p_open
-        [1,10,300],   #num_trials
-        [1,2,5],  #num_stim
-        [1,3,10],    #num_cav
-        [0,1,5,10],  #cav_i
-        [1,2],    #num_cav_ratio
-        [0,0.01,0.25,1],    #vesicle_prox
+
+    r = [
+        [0,0.01,0.99,1,1.6],    # cav_p_open
+        [1,5.5,10,300],         # num_trials
+        [1,1.5,2,5],            # num_stim
+        [0,1,3,10],             # num_cav
+        [0,1,5,10],             # cav_i
+        [1,1.5,2],              # num_cav_ratio
+        [0,0.01,0.25,1,1.5]     # vesicle_prox
         ]
-    
-    return dict(zip(p_name,p_sets))
-    
-parameter_names = [
-    "cav_p_open",
-    "num_trials",
-    "num_stim",
-    "num_cav",
-    "cav_i",
-    "num_cav_ratio",
-    "vesicle_prox",
-    ]
+
+    return [(n[i],r[i][j]) for i in range(len(n)) for j in range(len(r[i]))]
 
 
-@pytest.mark.parametrize("p_name", parameter_names)
-def test_runModel_range_params(p_name,param_ranges,param_base):
+@pytest.mark.parametrize("param_combo", param_ranges())
+def test_runModel_range_params(param_combo,param_base):
 
     alt_params = copy.deepcopy(param_base)
-    p_range = param_ranges[p_name]
-    
-    for i in range(len(p_range)):
-        alt_params[p_name] = p_range[i]
-        SIM = utils.Simulation(params = alt_params)
+    alt_params[param_combo(0)] = param_combo(1)
+    SIM = utils.Simulation(params = alt_params)
 
 
 # def test_runModel_combo_params(parameter_names,parameter_sets,param_base):

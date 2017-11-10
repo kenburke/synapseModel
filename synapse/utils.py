@@ -68,7 +68,7 @@ class Simulation:
                                                 ### Postsynaptic Params
 
                     "quantal_size" : -10,       # single AMPA current per vesicle (pA)
-                    "a_tau" : (0.001,0.005),    # fast and slow AMPA current time constants
+                    "a_tau" : (0.001,0.005)     # fast and slow AMPA current time constants
 
                                                 # NOTE: EC_50 and [Ca] decay constant were constrained 
                                                 #       to approximate observed changes in EPSC amplitude
