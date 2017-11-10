@@ -102,6 +102,11 @@ def test_runModel_range_params(p_name,param_ranges,param_base):
     alt_params = copy.deepcopy(param_base)
     p_range = param_ranges[p_name]
     
+    print(alt_params)
+    print(param_ranges)
+    print(param_ranges[p_name])
+    print(p_range)
+    
     for i in len(p_range):
         alt_params[p_name] = p_range[i]
         SIM = utils.Simulation(params = alt_params)
