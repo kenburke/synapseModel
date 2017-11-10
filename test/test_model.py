@@ -59,7 +59,7 @@ def param_base():
         }
     
 
-def param_ranges():
+def param_ranges(r):
     '''list of tuples of parameter values over a range'''
 
     n = [
@@ -72,25 +72,44 @@ def param_ranges():
         "vesicle_prox"
         ]
 
-    r = [
-        [0,0.01,0.99,1,1.6],    # cav_p_open
-        [1,5.5,10,300],         # num_trials
-        [1,1.5,2,5],            # num_stim
-        [0,1,3,10],             # num_cav
-        [0,1,5,10],             # cav_i
-        [1,1.5,2],              # num_cav_ratio
-        [0,0.01,0.25,1,1.5]     # vesicle_prox
-        ]
 
     return [(n[i],r[i][j]) for i in range(len(n)) for j in range(len(r[i]))]
 
+r_range = [
+    [0,0.01,0.99,1],        # cav_p_open
+    [1,10,300],             # num_trials
+    [1,2,5],                # num_stim
+    [0,1,3,10],             # num_cav
+    [0,1,5,10],             # cav_i
+    [1,2],                  # num_cav_ratio
+    [0,0.01,0.25,1]         # vesicle_prox
+    ]
 
-@pytest.mark.parametrize("param_combo", param_ranges())
+@pytest.mark.parametrize("param_combo", param_ranges(r_range))
 def test_runModel_range_params(param_combo,param_base):
 
     alt_params = copy.deepcopy(param_base)
-    alt_params[param_combo(0)] = param_combo(1)
+    alt_params[param_combo[0]] = param_combo[1]
     SIM = utils.Simulation(params = alt_params)
+
+r_bad = [
+    [-1,1.6],               # cav_p_open
+    [-1,0],                 # num_trials
+    [-1,0],                 # num_stim
+    [-1],                   # num_cav
+    [-1],                   # cav_i
+    [-1],                   # num_cav_ratio
+    [-1,1.5]                # vesicle_prox
+    ]
+
+@pytest.mark.parametrize("param_combo", param_ranges(r_bad))
+def test_runModel_invalid_params(param_combo,param_base):
+
+    alt_params = copy.deepcopy(param_base)
+    alt_params[param_combo[0]] = param_combo[1]
+    
+    with pytest.raises(model.ParamError):
+        SIM = utils.Simulation(params = alt_params)
 
 
 # def test_runModel_combo_params(parameter_names,parameter_sets,param_base):
