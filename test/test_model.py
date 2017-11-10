@@ -75,11 +75,11 @@ def param_ranges():
         ]
     p_sets = [
         [0,0.01,0.99,1],   #cav_p_open
-        [0,1,10,300],   #num_trials
-        [0,1,2,5],  #num_stim
-        [0,1,3,10],    #num_cav
+        [1,10,300],   #num_trials
+        [1,2,5],  #num_stim
+        [1,3,10],    #num_cav
         [0,1,5,10],  #cav_i
-        [0,0.5,1,2],    #num_cav_ratio
+        [1,2],    #num_cav_ratio
         [0,0.01,0.25,1],    #vesicle_prox
         ]
     
