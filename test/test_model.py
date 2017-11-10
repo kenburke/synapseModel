@@ -6,7 +6,7 @@ from math import floor
 import pytest
 import itertools
 
-params_base = {
+param_base = {
                                 ### General Simulation Params
 
     "fs" : 2e4,                 # per second
@@ -56,15 +56,30 @@ params_base = {
     }
     
 
-parameter_sets = [
-    [0,0.01,0.99,1],   #cav_p_open
-    [0,1,10,300],   #num_trials
-    [0,1,2,5],  #num_stim
-    [0,1,3,10],    #num_cav
-    [0,1,5,10],  #cav_i
-    [0,0.5,1,2],    #num_cav_ratio
-    [0,0.01,0.25,1],    #vesicle_prox
-    ]
+
+@pytest.fixture
+def param_ranges():
+    '''Dict of parameter ranges'''
+    p_name = [
+        "cav_p_open",
+        "num_trials",
+        "num_stim",
+        "num_cav",
+        "cav_i",
+        "num_cav_ratio",
+        "vesicle_prox",
+        ]
+    p_sets = [
+        [0,0.01,0.99,1],   #cav_p_open
+        [0,1,10,300],   #num_trials
+        [0,1,2,5],  #num_stim
+        [0,1,3,10],    #num_cav
+        [0,1,5,10],  #cav_i
+        [0,0.5,1,2],    #num_cav_ratio
+        [0,0.01,0.25,1],    #vesicle_prox
+        ]
+    
+    return dict(zip(p_name,p_sets))
     
 parameter_names = [
     "cav_p_open",
@@ -76,25 +91,24 @@ parameter_names = [
     "vesicle_prox",
     ]
 
-parameter_ranges = dict(zip(parameter_names,parameter_sets))
 
-@pytest.mark.parametrize("parameter_names", parameter_names)
-def test_runModel_range_params(parameter_names,parameter_ranges,params_base):
+@pytest.mark.parametrize("p_name", parameter_names)
+def test_runModel_range_params(p_name,param_ranges,param_base):
 
-    alt_params = copy.deepcopy(params_base)
-    p_range = parameter_ranges[parameter_names]
+    alt_params = copy.deepcopy(param_base)
+    p_range = param_ranges[p_name]
     
     for i in len(p_range):
-        alt_params[parameter_names] = p_range[i]
+        alt_params[p_name] = p_range[i]
         SIM = utils.Simulation(params = alt_params)
 
 
-def test_runModel_combo_params(parameter_names,parameter_sets,params_base):
-    
-    inds = np.floor(np.random.uniform([len(x) for x in parameter_sets]))
-    alt_params = copy.deepcopy(params_base)
-    
-    for i in len(parameter_names):
-        alt_params[parameter_names[i]] = parameter_sets[i][inds[i]]
-    
-    SIM = utils.Simulation(params = alt_params)
+# def test_runModel_combo_params(parameter_names,parameter_sets,param_base):
+#     
+#     inds = np.floor(np.random.uniform([len(x) for x in parameter_sets]))
+#     alt_params = copy.deepcopy(param_base)
+#     
+#     for i in len(parameter_names):
+#         alt_params[parameter_names[i]] = parameter_sets[i][inds[i]]
+#     
+#     SIM = utils.Simulation(params = alt_params)
