@@ -21,13 +21,15 @@ class Simulation:
     """
 
     def __init__(self, name=None, params=None, params_from_file=False):
-
+        """Init by loading param file and running one simulation"""
+        
+        print("")
         if name:
             self._name = name
         else:
             self._name = datetime.datetime.now().isoformat()
             
-        print("name : "+str(self._name))
+        print("Name : "+str(self._name))
         
         if params:
             self.params = params
@@ -38,22 +40,38 @@ class Simulation:
                 #Define default params
                 self.params = load_input_pickle('default')
         
-        self.default_runs = []
-        print("")
-        print("Running Model with Default Parameters...")
-        self.default_runs.append(self.run_default())
-
-
-    # Overload the __repr__ operator to make printing simpler.
-    def __repr__(self):
-        str = "NAME : "+self.name+"\n"
-        str += "PARAMS : \n"
-        print(self.params)
-        print("")
-        print("")
+        self.default_runs = []      # array of simulation runs with default parameters
+        self.mod_runs = []          # array of tuples that contain 0) a list of simulation runs
+                                    # and 1) a dictionary clarifying which parameter was given
+                                    # which value for each run. (for convenience, can also
+                                    # determine by comparing the simulation_run.params
+                                    # directly
         
-        return
-    
+        
+        print("Running Model with Default Parameters...")
+        self.run_default()
+        print("")
+
+    def __str__(self):
+        """Print out name, current params and stored simulation runs"""
+
+        print("")
+        s = "NAME : "+self._name+"\n\n"
+        s += "PARAMS :"
+        print(s)
+        
+        for key, val in self.params.items():
+            l = (21-len(key))//7
+            print("{0}".format(key)+"\t"*l+":\t{0}".format(val))
+        
+        s = "\nRuns stored in DEFAULT_RUNS = "+str(len(self.default_runs))
+        print(s)
+
+        s = "\nRuns stored in MOD_RUNS = "+str(len(self.mod_runs))
+        print(s)
+
+        return ""
+            
     def save(self):
         """
         Save this model into
@@ -62,15 +80,6 @@ class Simulation:
         print("Saving Simulation Object into output/"+self._name+".pkl")
         print("----")
         return save_output_pickle(self,self._name)
-    
-    def run_default(self):
-        """
-        Runs model with current default parameters (stored in self.params)
-        INPUT: none
-        OUTPUT: simulation_run object
-        """
-        sim_run = self._runModel()
-        return sim_run
     
     def replicate(self,simulation_run):
         """
@@ -82,10 +91,22 @@ class Simulation:
         
         return self._runModel(params=simulation_run.params)
     
+    def run_default(self):
+        """
+        Runs model with current default parameters (stored in self.params)
+        INPUT: none
+        OUTPUT: simulation_run object
+        """
+        sim_run = self._runModel()
+        
+        self.default_runs.append(sim_run)
+        
+        return sim_run
+    
     def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)*2/20 for x in range(20)]):
         """
         run a bunch of simulations, modulating one parameter each time
-        store output in list
+        store output in tuple containing list of simulation run objects and mod_range
         """
         sim_runs = []
  
@@ -101,6 +122,8 @@ class Simulation:
         
         print("")
         print("----")
+        print("Storing Sim_Runs in mod_runs as\n(sim_runs, mod_dict)\nwhere mod_dict = {parameter:mod_range}")
+        self.mod_runs.append((sim_runs,{parameter:mod_range}))
         print("Done with Modulation of "+parameter)
         print("----")
 
@@ -131,14 +154,9 @@ class Simulation:
 
             print("Recreating Mean EPSC from Run #{0}".format(i+1))
             mean_epsc.append(self.plot_epsc_trace(sim_run=curr,plot=False))
-#             plt.plot(curr.time,mean_epsc[i])
 
-        beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
-        beep(1)
-#         plt.ylabel('Membrane Current (pA)')
-#         plt.xlabel('Time, seconds')
-#         plt.title('Mean EPSC (across trials)')
-#         plt.show()
+#         beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
+#         beep(1)
         
         return (amp,ppr,cv_invsq)
         
@@ -473,6 +491,15 @@ class simulation_run:
     def __init__(self, data):
         for key,value in data.items():
             setattr(self,key,value)
+    
+    def __str__(self):
+        print(self.__repr__())
+        print("\tPARAMS...")
+        for key, val in self.params.items():
+            l = (21-len(key))//7
+            print("\t{0}".format(key)+"\t"*l+":\t{0}".format(val))
+
+        return ""
     
     def update(self,newdata):
         for key,value in newdata:
