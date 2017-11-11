@@ -6,14 +6,11 @@ from math import floor
 import pytest
 import itertools
 
-
-
 @pytest.fixture
 def param_base():
     '''Dict of parameter defaults'''
     return i_o.load_input_pickle('default')
     
-
 def param_ranges(r):
     '''list of tuples of parameter values over a range'''
     n = [
@@ -42,7 +39,7 @@ def test_runModel_range_params(param_combo,param_base):
 
     alt_params = copy.deepcopy(param_base)
     alt_params[param_combo[0]] = param_combo[1]
-    SIM = utils.Simulation(params = alt_params)
+    SIM = utils.Simulation(name = 'test', params = alt_params)
 
 r_bad = [
     [-1,1.6],               # cav_p_open
@@ -61,6 +58,25 @@ def test_runModel_invalid_params(param_combo,param_base):
     alt_params[param_combo[0]] = param_combo[1]
     
     with pytest.raises(check.ParamError):
-        SIM = utils.Simulation(params = alt_params)
+        SIM = utils.Simulation(name = 'test', params = alt_params)
 
+def test_default_runs(param_base):
 
+    SIM = utils.Simulation(name = 'test', params = param_base)
+    first = len(SIM.default_runs)
+    SIM.run_default()
+    second = len(SIM.default_runs)
+    
+    assert second == first + 1
+    
+def test_modulation_runs(param_base):
+ 
+    SIM = utils.Simulation(name = 'test', params = param_base)
+    
+    SIM.run_modulation(parameter = "cav_p_open")
+    first = len(SIM.mod_runs)
+
+    SIM.run_modulation(parameter = "cav_i")
+    second = len(SIM.mod_runs)
+    
+    assert second == first + 1    

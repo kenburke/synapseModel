@@ -27,7 +27,7 @@ class Simulation:
         if name:
             self._name = name
         else:
-            self._name = datetime.datetime.now().isoformat()
+            self._name = input("Simulation Name : ")
             
         print("Name : "+str(self._name))
         
@@ -78,9 +78,9 @@ class Simulation:
         """
         print("")
         print("Saving Simulation Object into output/"+self._name+".pkl")
-        print("----")
         return save_output_pickle(self,self._name)
-    
+        print("----")
+
     def replicate(self,simulation_run):
         """
         Replicate (i.e. rerun) a simulation with the same params (but different random seed)
@@ -103,7 +103,7 @@ class Simulation:
         
         return sim_run
     
-    def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)*2/20 for x in range(20)]):
+    def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)/10 for x in range(10)]):
         """
         run a bunch of simulations, modulating one parameter each time
         store output in tuple containing list of simulation run objects and mod_range
@@ -122,12 +122,12 @@ class Simulation:
         
         print("")
         print("----")
-        print("Storing Sim_Runs in mod_runs as\n(sim_runs, mod_dict)\nwhere mod_dict = {parameter:mod_range}")
+        print("Storing sim_runs in mod_runs as\n(sim_runs, mod_dict)\nwhere mod_dict = {parameter:mod_range}\n")
         self.mod_runs.append((sim_runs,{parameter:mod_range}))
         print("Done with Modulation of "+parameter)
         print("----")
 
-        return (sim_runs,mod_range)
+        return (sim_runs,{parameter:mod_range})
 
     def run_analysis(self,sim_runs=None):
         """
@@ -173,19 +173,19 @@ class Simulation:
 
         epsc_activity = np.zeros(np.array([no_samples,no_trials]).astype(int))
 
-        cav_inds = np.array(np.where(sim_run.quantal_content))
+        cav_inds = np.array(np.where(sim_run.data["quantal_content"]))
         big_rows, small_rows, cols = (
-            sim_run.ap_inds[cav_inds[0,:]],
+            sim_run.data["ap_inds"][cav_inds[0,:]],
             cav_inds[0,:],
             cav_inds[1,:],
             )
 
         epsc_activity[big_rows.astype(int),cols.astype(int)] = \
-            sim_run.quantal_content[small_rows.astype(int),cols.astype(int)]
+            sim_run.data["quantal_content"][small_rows.astype(int),cols.astype(int)]
 
         # define AMPA kernel
         ampa_kernel = ampa(
-            sim_run.time,
+            sim_run.data["time"],
             quantal_size = sim_run.params["quantal_size"],
             tau = sim_run.params["a_tau"]
             )
@@ -196,9 +196,9 @@ class Simulation:
                 arr=np.mean(epsc_activity[inds],axis=1))
 
             # Vm_t is of shape (no_samples,num_traces)        
-            Vm_t = Vm_t[0:len(sim_run.time)]
+            Vm_t = Vm_t[0:len(sim_run.data["time"])]
             if plot:
-                plt.plot(sim_run.time,mean_epsc)
+                plt.plot(sim_run.data["time"],mean_epsc)
                 plt.ylabel('Membrane Current (pA)')
                 plt.xlabel('Time, seconds')
                 plt.title('Mean EPSC (across trials)')
@@ -209,9 +209,9 @@ class Simulation:
                 arr=epsc_activity[inds])
 
             # Vm_t is of shape (no_samples,num_traces)        
-            Vm_t = Vm_t[0:len(sim_run.time),:]
+            Vm_t = Vm_t[0:len(sim_run.data["time"]),:]
             if plot:
-                plt.plot(sim_run.time,Vm_t)
+                plt.plot(sim_run.data["time"],Vm_t)
                 plt.ylabel('Membrane Current (pA)')
                 plt.xlabel('Time, seconds')
                 plt.title('EPSC (multiple trials)')
@@ -228,7 +228,7 @@ class Simulation:
         if sim_run is None:
             sim_run = self.default_runs[0]
         
-        cav_hits = sim_run.Ca_t[:,trace,synapse]
+        cav_hits = sim_run.data["Ca_t"][:,trace,synapse]
         
         p_v_func = hill(np.arange(200)/100.,S=1,ec50=sim_run.params["ca_ec50"],n=sim_run.params["ca_coop"])
         plt.plot(np.arange(200)/100.,p_v_func)
@@ -249,7 +249,7 @@ class Simulation:
         
         ## GETTING [Ca](t) (instead of [Ca](stim_num))
         # define exponential decay as [Ca] kernel
-        ca_kernel = np.exp(-sim_run.time/sim_run.params["ca_decay"])
+        ca_kernel = np.exp(-sim_run.data["time"]/sim_run.params["ca_decay"])
 
         # generate [Ca](t,trial) by convolving against cav_activity
         # crop for sweep length (note, time of peaks = ap_inds)
@@ -259,38 +259,38 @@ class Simulation:
         
         cav_activity = np.zeros(np.array([no_samples,no_trials,no_syn]).astype(int))
         
-        cav_inds = np.array(np.where(sim_run.cav_openings))
+        cav_inds = np.array(np.where(sim_run.data["cav_openings"]))
         big_rows, small_rows, cols, chunks = (
-            sim_run.ap_inds[cav_inds[0,:]],
+            sim_run.data["ap_inds"][cav_inds[0,:]],
             cav_inds[0,:],
             cav_inds[1,:],
             cav_inds[2,:]
             )
             
         cav_activity[big_rows.astype(int),cols.astype(int),chunks.astype(int)] = \
-            sim_run.cav_openings[small_rows.astype(int),cols.astype(int),chunks.astype(int)]
+            sim_run.data["cav_openings"][small_rows.astype(int),cols.astype(int),chunks.astype(int)]
         
         Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, \
             arr=cav_activity[np.ix_(np.arange(cav_activity.shape[0]),trace,synapse)])
 
         # Ca_t is of shape (no_samples,num_traces,num_synapses)        
-        Ca_t = Ca_t[0:len(sim_run.time),:,:]
+        Ca_t = Ca_t[0:len(sim_run.data["time"]),:,:]
         
         if average:
             Ca_per_syn = np.mean(Ca_t,axis=1)
-            plt.plot(sim_run.time,Ca_per_syn)
+            plt.plot(sim_run.data["time"],Ca_per_syn)
             plt.ylabel('[Ca], arbitrary units')
             plt.xlabel('Time, seconds')
             plt.title('Mean [Ca] per bouton (across trials)')
             plt.show()
             Ca_per_trace = np.mean(Ca_t,axis=2)
-            plt.plot(sim_run.time,Ca_per_trace)
+            plt.plot(sim_run.data["time"],Ca_per_trace)
             plt.ylabel('[Ca], arbitrary units')
             plt.xlabel('Time, seconds')
             plt.title('Mean [Ca] per trial (across boutons)')
             plt.show()
         else:
-            plt.plot(sim_run.time,Ca_t.reshape(cav_activity.shape[0],Ca_t.shape[1]*Ca_t.shape[2]))
+            plt.plot(sim_run.data["time"],Ca_t.reshape(cav_activity.shape[0],Ca_t.shape[1]*Ca_t.shape[2]))
             plt.ylabel('[Ca], arbitrary units')
             plt.xlabel('Time, seconds')
             plt.title('[Ca] for multiple trials')
@@ -463,7 +463,6 @@ class Simulation:
     #   print("Packaging Results....")
 
         data = {
-            "params" : params,
             "time" : time,
             "ap_times" : ap_times,
             "ap_inds" : ap_inds,
@@ -478,7 +477,7 @@ class Simulation:
             "epsc_ave" : epsc_ave
             }
 
-        sim_run = simulation_run(data)
+        sim_run = simulation_run(params,data)
 
         return sim_run
         
@@ -488,19 +487,20 @@ class simulation_run:
     A simple class for storing data (and parameters) from a simulation run
     """
 
-    def __init__(self, data):
-        for key,value in data.items():
-            setattr(self,key,value)
-    
+    def __init__(self, params, data):
+        self.params = params
+        self.data = data
+            
     def __str__(self):
         print(self.__repr__())
         print("\tPARAMS...")
         for key, val in self.params.items():
             l = (21-len(key))//7
             print("\t{0}".format(key)+"\t"*l+":\t{0}".format(val))
+        
+        print("\n\tDATA...")
+        for key, val in self.data.items():
+            l = (21-len(key))//7
+            print("\t{0}".format(key))
 
         return ""
-    
-    def update(self,newdata):
-        for key,value in newdata:
-            setattr(self,key,value)
