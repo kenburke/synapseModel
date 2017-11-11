@@ -1,4 +1,4 @@
-from synapse import model, io, utils
+from synapse import io, utils, check
 import os
 import copy
 from random import random, seed
@@ -108,16 +108,7 @@ def test_runModel_invalid_params(param_combo,param_base):
     alt_params = copy.deepcopy(param_base)
     alt_params[param_combo[0]] = param_combo[1]
     
-    with pytest.raises(model.ParamError):
+    with pytest.raises(check.ParamError):
         SIM = utils.Simulation(params = alt_params)
 
 
-# def test_runModel_combo_params(parameter_names,parameter_sets,param_base):
-#     
-#     inds = np.floor(np.random.uniform([len(x) for x in parameter_sets]))
-#     alt_params = copy.deepcopy(param_base)
-#     
-#     for i in len(parameter_names):
-#         alt_params[parameter_names[i]] = parameter_sets[i][inds[i]]
-#     
-#     SIM = utils.Simulation(params = alt_params)

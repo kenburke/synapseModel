@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .io import write_results, load_input_pickle, get_user_params, dumpclean
 from .utils import Simulation
-from .model import runModel
 
 print("")
 print("")

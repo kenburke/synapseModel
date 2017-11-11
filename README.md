@@ -32,9 +32,10 @@ In English, I'm trying to model a lot of neuronal synapses onto a single neuron.
 ├── synapse
 │   ├── __init__.py
 │   ├── __main__.py
-│   ├── model.py
 │   ├── io.py
-│   └── utils.py
+│   ├── utils.py
+│   ├── check.py
+│   └── math_funcs.py
 └── test
     ├── test_model.py
     ├── test_io.py
