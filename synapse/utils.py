@@ -2,80 +2,41 @@ import os
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from .io import load_input_pickle, save_input_pickle, load_output_pickle, save_output_pickle
+import datetime
+from .i_o import load_input_pickle, save_input_pickle, load_output_pickle, save_output_pickle
 from .check import check_params
 from .math_funcs import ampa, hill
 
 class Simulation:
     """
     A class for one iteration of model
+    
+    Major attributes:
+        - params:
+            -current set of parameters if you call _runModel (without specifying new parameters)
+        - default_runs
+            -list of "simulation_run" objs that contain results runs of a simulation, including:
+                -sim_run.params, same format as Simulation.params, for replication
+    
     """
 
-    def __init__(self, name=None, params=None, params_from_file = False):
+    def __init__(self, name=None, params=None, params_from_file=False):
 
         if name:
-            self.name = name
+            self._name = name
         else:
-            self.name = math.floor(np.random.uniform()*1e5)
+            self._name = datetime.datetime.now().isoformat()
             
-        print("name : "+str(self.name))
+        print("name : "+str(self._name))
         
         if params:
             self.params = params
-            
         else:
             if params_from_file:
-                self.params = load_input_pickle(params)
-                
+                self.params = load_input_pickle(params_from_file)
             else:
                 #Define default params
-                self.params = {
-                                                ### General Simulation Params
-
-                    "fs" : 2e4,                 # per second
-                    "sweep_length" : 1,         # seconds
-                    "num_trials" : 300,         # number of simulation trials to run
-                    "num_stim" : 2,             # number of AP stimuli to run
-                    "stim_int" : 0.05,          # interval of AP stimuli (sec)
-                    "stim1_time" : 0.1,         # time of first stimulus (sec)
-
-                                                ### Calcium Channel Params
-
-                    "num_syn" : 100,            # number of synapses
-                    "num_cav" : 1,              # number of voltage-gated calcium channels in complex
-                                                # NOTE: [Ca] comes from all channels, as if
-                                                # in a cluster (but still open independently)
-                    "cav_p_open" : 0.83,        # probability of CaV opening per AP
-                    "cav_i" : 1,                # single CaV current per AP (arbitrary units)
-                    "ca_decay" : 0.05,          # exponential decay time constant for [ca]
-                    "num_cav_ratio" : 2,        # mult num_cav and divide cav_i by this
-
-                                                ### Transmission / Hill Function Params
-                    "vesicle_prox" : 0.25,      # Probability your vesicle is nearby the CaV complex
-                    "ca_coop" : 3.72,           # Hill Function param N for calcium ion cooperativity
-                                                # in vesicular release, see Scimemi & Diamond
-                    "ca_ec50" : 0.7,            # Hill Function param EC_50 for calcium concentration
-                                                # for half-maximal vesicle release probability                
-
-                                                ### Vesicular Depletion Params
-
-                    #probably need num vesicles in RRP? and to adjust exponential resetting func?
-                    "depletion_on" : False,     # Turn on depletion?
-                    "pool_tau" : 1.00,          # Readily-Releasable Pool recovery time constant.
-                                                # Here, we model the RRP as a binary variable, either
-                                                # occupied by one vesicle or not. Thus, we use this
-                                                # to define a probability of occupancy [0,1)
-
-                                                ### Postsynaptic Params
-
-                    "quantal_size" : -10,       # single AMPA current per vesicle (pA)
-                    "a_tau" : (0.001,0.005)     # fast and slow AMPA current time constants
-
-                                                # NOTE: EC_50 and [Ca] decay constant were constrained 
-                                                #       to approximate observed changes in EPSC amplitude
-                                                #       by SKF and Baclofen, given 40% reduction in
-                                                #       I_cal = N_cav * p_open * cav_i       
-                    }
+                self.params = load_input_pickle('default')
         
         self.default_runs = []
         print("")
@@ -85,11 +46,41 @@ class Simulation:
 
     # Overload the __repr__ operator to make printing simpler.
     def __repr__(self):
-        return self.name
+        str = "NAME : "+self.name+"\n"
+        str += "PARAMS : \n"
+        print(self.params)
+        print("")
+        print("")
         
+        return
+    
+    def save(self):
+        """
+        Save this model into
+        """
+        print("")
+        print("Saving Simulation Object into output/"+self._name+".pkl")
+        print("----")
+        return save_output_pickle(self,self._name)
+    
     def run_default(self):
+        """
+        Runs model with current default parameters (stored in self.params)
+        INPUT: none
+        OUTPUT: simulation_run object
+        """
         sim_run = self._runModel()
         return sim_run
+    
+    def replicate(self,simulation_run):
+        """
+        Replicate (i.e. rerun) a simulation with the same params (but different random seed)
+        
+        INPUT: simulation_run object, already completed
+        OUTPUT: simulation_run object from another simulation with same params as input
+        """
+        
+        return self._runModel(params=simulation_run.params)
     
     def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)*2/20 for x in range(20)]):
         """
@@ -297,6 +288,7 @@ class Simulation:
 
         OUTPUT: 
         -"simulation" object that contains the following data:
+            - params <- dictionary of the format of Simulation.params, for reproducing experiments
             - time
             - ap_times
             - ap_inds
@@ -308,11 +300,8 @@ class Simulation:
             - epsc_per_syn
             - quantal_content
             - epsc
-    
-            (also, the following if Vesicle Depletion is on:)
-            (-
-            (-
         """
+
         if params is None:
             params = self.params
 
