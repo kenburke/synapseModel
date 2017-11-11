@@ -25,20 +25,19 @@ In English, I'm trying to model a lot of neuronal synapses onto a single neuron.
 │   ...
 ├── input
 │   ├── ...
-│   └── <possible input files>
+│   └── <input files>
 ├── output
 │   ├── ...
 │   └── <output files>
 ├── synapse
 │   ├── __init__.py
 │   ├── __main__.py
-│   ├── io.py
+│   ├── i_o.py
 │   ├── utils.py
 │   ├── check.py
 │   └── math_funcs.py
 └── test
-    ├── test_model.py
-    ├── test_io.py
+    ├── test_i_o.py
     └── test_utils.py
     
 ```
