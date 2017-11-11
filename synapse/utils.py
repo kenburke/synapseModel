@@ -3,7 +3,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import datetime
-from .i_o import load_input_pickle, save_input_pickle, load_output_pickle, save_output_pickle
+from .i_o import load_input_pickle, save_output_pickle, get_user_params
 from .check import check_params
 from .math_funcs import ampa, hill
 
@@ -20,7 +20,7 @@ class Simulation:
     
     """
 
-    def __init__(self, name=None, params=None, params_from_file=False):
+    def __init__(self, name=None, params=None, params_from_file=False, params_from_user=False):
         """Init by loading param file and running one simulation"""
         
         print("")
@@ -36,6 +36,8 @@ class Simulation:
         else:
             if params_from_file:
                 self.params = load_input_pickle(params_from_file)
+            elif params_from_user:
+                self.params = get_user_params()
             else:
                 #Define default params
                 self.params = load_input_pickle('default')

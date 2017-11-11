@@ -16,14 +16,43 @@ def load_output_pickle(name):
     with open('output/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
-def write_results(simulation, output_file):
-    """
-    Input: 
-        - "simulation" object from model.runModel
-    """
-
 def get_user_params():
-    return
+
+    params = load_input_pickle('default')
+    
+    print("DEFAULT PARAMS :")
+
+    for key, val in params.items():
+        l = (21-len(key))//7
+        print("{0}".format(key)+"\t"*l+":\t{0}".format(val))
+
+    print("\nNow we will enter our values")
+    for k,v in params.items():
+        if k=='depletion_on':
+            val = input(k+" (use 0/1 for False/True) = ")
+            val = bool(int(val))
+        elif k=='a_tau':
+            val1 = input(k+", first (fast) = ")
+            val2 = input(k+", second (slow) = ")
+            val = (float(val1),float(val2))
+        else:
+            val = float(input(k+" = "))
+        params[k] = val
+    
+    print("-----")
+    print("")
+    print("NEW PARAMS :")
+
+    for key, val in params.items():
+        l = (21-len(key))//7
+        print("{0}".format(key)+"\t"*l+":\t{0}".format(val))
+
+    print("")
+    name = input("Enter Filename (no extension) > ")
+    save_input_pickle(params,name)
+    print("")
+    
+    return params
 
 def dumpclean(obj):
     if type(obj) == dict:
