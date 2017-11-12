@@ -140,7 +140,7 @@ class Simulation:
         if sim_runs is None:
             sim_runs = self.default_runs
             
-        print("Running Analysis:")
+        print("Analysis Start:")
         print("")
         
         amp = np.zeros(len(sim_runs))

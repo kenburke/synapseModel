@@ -1,10 +1,9 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-from .i_o import load_input_pickle, get_user_params, dumpclean
+from .i_o import load_input_pickle, get_user_params, get_user_modulation, dumpclean
 from .utils import Simulation
 
-print("")
 print("")
 
 # Some quick stuff to make sure the program is called correctly
@@ -16,23 +15,42 @@ if len(sys.argv) != 3:
 
 if sys.argv[1][0:2] == '-L':
     print("Option: Load simulation parameter file")
-    input_fn = input("Insert input filename from input/:")
-    params = load_input_pickle(input_fn)
-    print("----")   
-    print("Running simulation with params from "+input_fn+" :")
+    input_fn = input("Insert input filename from input folder > ")
+    print("")
+    SIM = Simulation(params_from_file = input_fn)
+    print("")
+    print("Running simulation with params from "+input_fn)
 
 elif sys.argv[1][0:2] == '-M':
     print("Option: Manual insertion of parameters")
-    params = get_user_params()
-    print("----")   
-    print("Running simulation with user-definied params:")
-
-elif sys.argv[1][0:2] == '-K':
-    print("Option: Running with defaults")
+    print("")   
+    SIM = Simulation(params_from_user = True)
+    print("")   
+    print("Running simulation with user-definied params")
     
 else:
     print("Usage: python -m synapse [-L| -M] <output file>")
     sys.exit(0)
+
+# Show user what parameters they're working with
+print(SIM)
+print("----")   
+
+# get the parameter for modulation and the range of modulation, then run
+mod_param,mod_range = get_user_modulation()
+print("")
+print("----")   
+print("")
+SIM.run_modulation(parameter=mod_param,mod_range=mod_range)
+
+# Run most recent modulation analysis
+print('Running Analysis on most recent modulation run, with following params : ')
+print(SIM.mod_runs[-1][1])
+print("")
+# notify just pings you if it takes a long time
+amp,ppr,cv_invsq = SIM.run_analysis(sim_runs=SIM.mod_runs[-1][0],notify=False)
+
+######
 
 
 print("")
