@@ -27,7 +27,17 @@ def get_user_params():
         print("{0}".format(key)+"\t"*l+":\t{0}".format(val))
 
     print("\nNow we will enter our values")
+        
+    inters = [
+        'num_syn',
+        'num_cav',
+        'num_stim',
+        'num_trials',
+        'num_cav_ratio'
+        ]
+
     for k,v in params.items():
+
         if k=='depletion_on':
             val = input(k+" (use 0/1 for False/True) = ")
             val = bool(int(val))
@@ -37,6 +47,10 @@ def get_user_params():
             val = (float(val1),float(val2))
         else:
             val = float(input(k+" = "))
+        
+        if k in inters:
+            val = int(val)
+        
         params[k] = val
     
     print("-----")
