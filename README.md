@@ -58,7 +58,7 @@ source activate synapseModel
 ```
 
 Then the package's main function (located in `synapse/__main__.py`) 
-can be run as follows
+can be run from the `synapseModel/` folder as follows
 
 ```
 python -m synapse [-L| -M] <output file>
