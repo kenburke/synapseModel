@@ -48,7 +48,7 @@ print('Running Analysis on most recent modulation run, with following params : '
 print(SIM.mod_runs[-1][1])
 print("")
 # notify just pings you if it takes a long time
-amp,ppr,cv_invsq = SIM.run_analysis(sim_runs=SIM.mod_runs[-1][0],notify=False)
+amp,ppr,cv_invsq,mean_epsc = SIM.run_analysis(sim_runs=SIM.mod_runs[-1][0],notify=False)
 
 ######
 

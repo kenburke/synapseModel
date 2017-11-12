@@ -62,13 +62,12 @@ def test_runModel_different_combinations(param_base,pd=param_dict(r_range)):
     
         alt_params = copy.deepcopy(param_base)
     
-        for key in pd.keys:
+        for key in pd.keys():
             ind = int(np.random.uniform(len(pd[key])))
             alt_params[key] = pd[key][ind]
     
         SIM = utils.Simulation(name = 'test', params = alt_params)
     
-
 r_bad = [
     [-1,1.6],               # cav_p_open
     [-1,0],                 # num_trials

@@ -162,7 +162,7 @@ class Simulation:
             beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
             beep(1)
         
-        return (amp,ppr,cv_invsq)
+        return (amp,ppr,cv_invsq,mean_epsc)
         
     def plot_epsc_trace(self,sim_run=None,plot=True,average=True):
         """
