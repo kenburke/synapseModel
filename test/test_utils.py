@@ -2,6 +2,7 @@ from synapse import i_o, utils, check
 import os
 import copy
 from random import random, seed
+import numpy as np
 from math import floor
 import pytest
 import itertools
@@ -24,6 +25,19 @@ def param_ranges(r):
         ]
     return [(n[i],r[i][j]) for i in range(len(n)) for j in range(len(r[i]))]
 
+def param_dict(r):
+    '''dict of param values over a range'''
+    n = [
+        "cav_p_open",
+        "num_trials",
+        "num_stim",
+        "num_cav",
+        "cav_i",
+        "num_cav_ratio",
+        "vesicle_prox"
+        ]
+    return dict(zip(n,r))
+
 r_range = [
     [0,0.01,0.99,1],        # cav_p_open
     [1,10,300],             # num_trials
@@ -40,6 +54,18 @@ def test_runModel_range_params(param_combo,param_base):
     alt_params = copy.deepcopy(param_base)
     alt_params[param_combo[0]] = param_combo[1]
     SIM = utils.Simulation(name = 'test', params = alt_params)
+
+def test_runModel_different_combinations(param_base,pd=param_dict(r_range)):
+    '''run a few simulations with parameter sets randomly picked from r_range'''
+    
+    alt_params = copy.deepcopy(param_base)
+    
+    for key in pd.keys:
+        ind = int(np.random.uniform(len(pd[key])))
+        alt_params[key] = pd[key][ind]
+    
+    SIM = utils.Simulation(name = 'test', params = alt_params)
+    
 
 r_bad = [
     [-1,1.6],               # cav_p_open
