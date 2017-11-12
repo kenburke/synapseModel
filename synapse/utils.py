@@ -3,7 +3,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import datetime
-from .i_o import load_input_pickle, save_session_pickle, get_user_params
+from .i_o import load_input_pickle, save_session_pickle, get_user_params, save_output_plot
 from .check import check_params
 from .math_funcs import ampa, hill
 from .model import _sim_CaV_opening, _sim_vesicle_release, _sim_vesicle_depletion, _sim_ampa_responses
@@ -161,6 +161,28 @@ class Simulation:
         if notify:
             beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
             beep(1)
+        
+        plot_folder_path = os.getcwd()+'/session/'+'wow'+'_plots'
+        os.mkdir(plot_folder_path)
+        print("Saving Plots to "+plot_folder_path)
+        
+        fig = plt.plot(amp/amp[-1],ppr/ppr[-1])
+        plt.xlabel('EPSC Amplitude (norm.)')
+        plt.ylabel('Paired-Pulse Ratio (norm.)')
+        plt.title('PPR vs. Amplitude')
+        save_output_plot(fig,plot_folder_path,'PPR_v_Amp')
+        
+        fig = plt.plot(amp/amp[-1],cv_invsq/cv_invsq[-1])
+        plt.xlabel('EPSC Amplitude (norm.)')
+        plt.ylabel('C.V.^-2 (norm.)')
+        plt.title('C.V.^-2 vs. Amplitude')
+        save_output_plot(fig,plot_folder_path,'CV_v_Amp')
+        
+        fig = plt.plot(sim_run.data['time'],mean_epsc)
+        plt.xlabel('Time (seconds)')
+        plt.ylabel('Mean EPSC (pA)')
+        plt.title('Mean EPSC across conditions')
+        save_output_plot(fig,plot_folder_path,'EPSC_v_Time')
         
         return (amp,ppr,cv_invsq,mean_epsc)
         

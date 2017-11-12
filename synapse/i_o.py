@@ -16,6 +16,9 @@ def load_session_pickle(name):
     with open(os.getcwd()+'/session/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
+def save_output_plot(fig,file_loc,filename):
+    fig.savefig(file_loc+filename, format='svg')
+
 def get_user_params():
 
     params = load_input_pickle('default')
