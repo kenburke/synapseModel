@@ -3,17 +3,16 @@ import pickle
 def load_input_pickle(name):
     with open('input/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
-
-def save_output_pickle(obj, name):
-    with open('output/'+ name + '.pkl', 'wb') as f:
+def save_session_pickle(obj, name):
+    with open('session/'+ name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
 def save_input_pickle(obj, name):
     with open('input/'+ name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-def load_output_pickle(name):
-    with open('output/' + name + '.pkl', 'rb') as f:
+def load_session_pickle(name):
+    with open('session/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
 def get_user_params():

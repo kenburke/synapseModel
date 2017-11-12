@@ -3,9 +3,10 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import datetime
-from .i_o import load_input_pickle, save_output_pickle, get_user_params
+from .i_o import load_input_pickle, save_session_pickle, get_user_params
 from .check import check_params
 from .math_funcs import ampa, hill
+from .model import _sim_CaV_opening, _sim_vesicle_release, _sim_vesicle_depletion, _sim_ampa_responses
 
 class Simulation:
     """
@@ -79,8 +80,8 @@ class Simulation:
         Save this model into
         """
         print("")
-        print("Saving Simulation Object into output/"+self._name+".pkl")
-        return save_output_pickle(self,self._name)
+        print("Saving Simulation Object into session/"+self._name+".pkl")
+        return save_session_pickle(self,self._name)
         print("----")
 
     def replicate(self,simulation_run):
@@ -131,7 +132,7 @@ class Simulation:
 
         return (sim_runs,{parameter:mod_range})
 
-    def run_analysis(self,sim_runs=None):
+    def run_analysis(self,sim_runs=None,notify=False):
         """
         takes list of simulation_run objects
         """
@@ -150,15 +151,16 @@ class Simulation:
         for i in range(len(sim_runs)):
             print("Analyzing Run #{0}".format(i+1))
             curr = sim_runs[i]
-            amp[i] = curr.epsc_ave[0]
-            ppr[i] = curr.epsc_ave[1]/curr.epsc_ave[0]
-            cv_invsq[i] = (np.mean(curr.epsc[1,:]**2))/(np.var(curr.epsc[1,:]))
+            amp[i] = curr.data["epsc_ave"][0]
+            ppr[i] = curr.data["epsc_ave"][1]/curr.data["epsc_ave"][0]
+            cv_invsq[i] = (np.mean(curr.data["epsc"][1,:]**2))/(np.var(curr.data["epsc"][1,:]))
 
             print("Recreating Mean EPSC from Run #{0}".format(i+1))
             mean_epsc.append(self.plot_epsc_trace(sim_run=curr,plot=False))
-
-#         beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
-#         beep(1)
+        
+        if notify:
+            beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
+            beep(1)
         
         return (amp,ppr,cv_invsq)
         
@@ -299,12 +301,13 @@ class Simulation:
             plt.show()
 
     
-    def _runModel(self,params=None):
+    def _runModel(self,params=None,text_display=False):
         """
         simple model of a synapse
 
         INPUT:
         -dictionary of parameters for simulation 
+        -text_display toggle
 
         OUTPUT: 
         -"simulation" object that contains the following data:
@@ -349,120 +352,40 @@ class Simulation:
                 print("INDEXERROR: {0}".format(err))
                 print("Stimulation parameters may exceed length of sweep")
                 return
-
+        
         ####################################
         # Simulate Calcium Channel Opening #
         ####################################
-
-    #     print("Simulating Calcium Channel Opening...")
-
-        cav_openings = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
-        cav_successes = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
-
-        for i in range(params["num_cav"]*params["num_cav_ratio"]):
-            cav_successes = np.random.uniform(size=(no_stims,no_trials,no_syn)) < params["cav_p_open"] 
-            cav_openings += cav_successes*params["cav_i"]/params["num_cav_ratio"]    
-
-        # define exponential decay as [Ca] kernel
-        ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
-
-        # generate [Ca](stim_num,trial) by convolving with cav_openings
-        # crop for no_stim length
-
-        Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, arr=cav_openings)
-        Ca_t = Ca_t[0:no_stims,:,:]
-
+        cav_successes,cav_openings,ca_kernel,Ca_t = _sim_CaV_opening(
+            params, no_stims, no_trials, no_syn, text_display=text_display)
+            
         #########################################
         # Simulate Ca-Dependent Vesicle Release #
-        #########################################
+        ########################################
+        p_v,corrected_p,p_v_successes = _sim_vesicle_release(
+            params,Ca_t,cav_successes,text_display=text_display)
 
-    #     print("Simulating [Ca]-Dependent Vesicle Release...")
-
-        # apply hill function to obtain probability of vesicle release
-        p_v = hill(Ca_t,S=1,ec50=params["ca_ec50"],n=params["ca_coop"])
-
-        # extract values corresponding to action-potential timepoints
-        # multiplied by CaV opening success/failure (to prevent vesicle
-        # release due purely to residual calcium).
-        # Also multiply by a scaling factor that indicates the probability
-        # that the vesicle is nearby the calcium channel cluster
-
-        corrected_p = p_v*cav_successes*params["vesicle_prox"]
-
-        # then randomly sample to generate quantal events
-        p_v_successes = (np.random.uniform(size=corrected_p.shape) < corrected_p)*1
-
-
+        ################################
+        # Simulate Vesicular Depletion #
+        ################################
         if(params["depletion_on"]):
-
-            ################################
-            # Simulate Vesicular Depletion #
-            ################################
-    
-    #         print("Simulating Vesicular Depletion...")
-    
-            # Now, release_successes must be multiplied by whether or not a vesicle is present
-            # So we must model the readily-releasable pool and its depletion / replenishment
-            # To do this, we need a matrix of the shape of pool_size that indicates whether
-            # the RRP is occupied (modeled as only 1 vesicle with exponential recovery):
-
-            pool_size = np.zeros(p_v_successes.shape,dtype=int) + 1
-
-            pool_recovery_fraction = 1-np.exp(-params["stim_int"]/params["pool_tau"]) # frac recovered every stim interval
-
-            release_successes = np.zeros(p_v_successes.shape,dtype=int)
-
-            # Now we iterate through each stimulus (in parallel) and check if the empty pools
-            # recover (doing a flat fraction according to pool_tau generates exponential recovery
-            # on average)
-
-            for i in range(no_stims):
-                # first calculate whether a vesicle is present
-                # for pool_size == 0, check rand against exponential recovery
-                pool_zero_inds = np.array(np.where(pool_size[i,:,:]==0))
-                cols,chunks = (pool_zero_inds[0,:],pool_zero_inds[1,:])
-                rows = np.zeros(cols.shape,dtype=int)+i
-                pool_size[rows,cols,chunks] = (np.random.uniform(size=chunks.size) < pool_recovery_fraction ) * 1
-        
-                # now check if there was a successful vesicle release (pool_size * p_v_successes)
-                release_successes[i,:,:] = pool_size[i,:,:]*p_v_successes[i,:,:]
-        
-                # if you're still within range, for all successes, set next stim's pool size to zero
-                if i+1<no_stims:
-                    release_inds = np.array(np.where((p_v_successes[i,:,:]==1)&(pool_size[i,:,:]==1)))
-                    cols,chunks = (release_inds[0,:],release_inds[1,:])
-                    rows = np.zeros(cols.shape,dtype=int)+i+1     # next stimulus
-                    pool_size[rows,cols,chunks] = 0
-                    # for all inds where the pool_size was 0, nothing (they get another chance to reload)
-    
-            quantal_content_per_syn = release_successes
-
+            quantal_content_per_syn = _sim_vesicle_depletion(
+                params,p_v_successes,no_stims,text_display=text_display)
         else:
             quantal_content_per_syn = p_v_successes
-
 
         ###########################
         # Simulate AMPA Responses #
         ###########################    
-
-    #     print("Simulating AMPA Responses...")
-
-        # obtain total quantal content per trial (sum across synapses)
-        # in order to obtain total EPSC
-
-        quantal_content = np.sum(quantal_content_per_syn,axis=2)
-
-        # quantify bulk EPSC and individual synapse EPSC
-        epsc = quantal_content*params["quantal_size"]
-        epsc_per_syn = quantal_content_per_syn*params["quantal_size"]
-
-        epsc_ave = np.mean(epsc,axis=1)
+        quantal_content,epsc,epsc_per_syn,epsc_ave = _sim_ampa_responses(
+            params,quantal_content_per_syn,text_display=text_display)
 
         #####################
         # Packaging Results #
         #####################   
-
-    #   print("Packaging Results....")
+        
+        if text_display:
+            print("Packaging Results....")
 
         data = {
             "time" : time,
@@ -478,9 +401,9 @@ class Simulation:
             "epsc" : epsc,
             "epsc_ave" : epsc_ave
             }
-
+        
         sim_run = simulation_run(params,data)
-
+        
         return sim_run
         
 
