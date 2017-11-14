@@ -53,7 +53,10 @@ def test_runModel_range_params(param_combo,param_base):
 
     alt_params = copy.deepcopy(param_base)
     alt_params[param_combo[0]] = param_combo[1]
-    SIM = utils.Simulation(name = 'test', params = alt_params)
+    try:
+        SIM = utils.Simulation(name = 'test', params = alt_params)
+    except:
+        print("parameter = {0}\nvalue = {1}".format(param_combo[0],param_combo[1]))
 
 def test_runModel_different_combinations(param_base,pd=param_dict(r_range)):
     '''run a few simulations with parameter sets randomly picked from r_range'''
@@ -65,8 +68,14 @@ def test_runModel_different_combinations(param_base,pd=param_dict(r_range)):
         for key in pd.keys():
             ind = int(np.random.uniform(len(pd[key])))
             alt_params[key] = pd[key][ind]
-    
-        SIM = utils.Simulation(name = 'test', params = alt_params)
+        
+        try:
+            SIM = utils.Simulation(name = 'test', params = alt_params)
+        except:
+            print("Parameters : ")
+            for key in alt_params.keys():
+                print("{0}  =  {1}".format(key,alt_params[key]))
+
     
 r_bad = [
     [-1,1.6],               # cav_p_open
