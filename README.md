@@ -27,8 +27,15 @@ In English, I'm trying to model a lot of neuronal synapses onto a single neuron.
 │   ├── ...
 │   └── <input files>
 ├── session
-│   ├── ...
-│   └── <saved session>
+│   ├── session1_plots/
+│   │   ├── ...
+│   │   └── ...
+│   ├── <session1.pkl>
+│   ├── session2_plots/
+│   │   ├── ...
+│   │   └── ...
+│   ├── <session2.pkl>
+│   └── ...
 ├── synapse
 │   ├── __init__.py
 │   ├── __main__.py
@@ -80,6 +87,7 @@ sudo conda env create
 ```
 
 followed by your password, depending on whether you have permissions or own this folder.
+
 
 ## advanced usage
 
@@ -157,6 +165,12 @@ plot_I_ca_trace             -- plot presynaptic calcium influx vs time for a syn
 _runModel                   -- run the model for a given param set (def = self.params), return simulation_run object (def text_display=False can turn on to see progress in terminal)
 ```
 
+
+## interactive
+
+This project comes with an interactive Jupyter notebook in ``synapseModel.ipynb`` to explore the advanced applications.
+
+
 ## testing
 
 Testing is as simple as running
@@ -167,9 +181,6 @@ python -m pytest
 
 from the root directory of this project.
 
-## interactive
-
-This project comes with an interactive Jupyter notebook in ``synapseModel.ipynb``.
 
 
 ## contributors

@@ -40,9 +40,10 @@ class Simulation:
             beep(1)
             print("WARNING : FOLDER PATH ALREADY EXISTS")
             print(self.plot_path)
-            print("UNABLE TO CONTINUE... RESTART WITH DIFFERENT, UNIQUE NAME")
-            assert False
-            
+            print("WRITING OVER")
+            for fn in os.listdir(self.plot_path):
+                os.remove(self.plot_path+fn)
+                  
         if params:
             self.params = params
         else:
