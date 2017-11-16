@@ -29,9 +29,20 @@ class Simulation:
             self._name = name
         else:
             self._name = input("Simulation Name : ")
-            
+
         print("Name : "+str(self._name))
         
+        self.plot_path = os.getcwd()+'/session/'+self._name+'_plots/'
+        try:
+            os.mkdir(self.plot_path)
+        except (FileExistsError):
+            beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
+            beep(1)
+            print("WARNING : FOLDER PATH ALREADY EXISTS")
+            print(self.plot_path)
+            print("UNABLE TO CONTINUE... RESTART WITH DIFFERENT, UNIQUE NAME")
+            assert False
+            
         if params:
             self.params = params
         else:
@@ -75,13 +86,17 @@ class Simulation:
 
         return ""
             
-    def save(self):
+    def save(self,fn=None):
         """
-        Save this model into
+        Save this model into .pkl file
         """
+        
+        if (fn==None):
+            fn = self._name
+        
         print("")
-        print("Saving Simulation Object into session/"+self._name+".pkl")
-        return save_session_pickle(self,self._name)
+        print("Saving Simulation Object into session/"+fn+".pkl")
+        return save_session_pickle(self,fn)
         print("----")
 
     def replicate(self,simulation_run):
@@ -135,6 +150,7 @@ class Simulation:
     def run_analysis(self,sim_runs=None,notify=False):
         """
         takes list of simulation_run objects
+        runs a bunch of basic analyses (PPR, CV, etc) and saves plots
         """
         
         if sim_runs is None:
@@ -160,29 +176,32 @@ class Simulation:
         
         if notify:
             beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
-            beep(1)
+            beep(2)
+                
+        print("")
+        print("Saving Plots to "+self.plot_path)
         
-        plot_folder_path = os.getcwd()+'/session/'+'wow'+'_plots'
-        os.mkdir(plot_folder_path)
-        print("Saving Plots to "+plot_folder_path)
-        
-        fig = plt.plot(amp/amp[-1],ppr/ppr[-1])
+        plt.plot(amp/amp[-1],ppr/ppr[-1])
         plt.xlabel('EPSC Amplitude (norm.)')
         plt.ylabel('Paired-Pulse Ratio (norm.)')
         plt.title('PPR vs. Amplitude')
-        save_output_plot(fig,plot_folder_path,'PPR_v_Amp')
+        save_output_plot(self.plot_path,'PPR_v_Amp')
+        plt.close()
         
-        fig = plt.plot(amp/amp[-1],cv_invsq/cv_invsq[-1])
+        plt.plot(amp/amp[-1],cv_invsq/cv_invsq[-1])
         plt.xlabel('EPSC Amplitude (norm.)')
         plt.ylabel('C.V.^-2 (norm.)')
         plt.title('C.V.^-2 vs. Amplitude')
-        save_output_plot(fig,plot_folder_path,'CV_v_Amp')
+        save_output_plot(self.plot_path,'CV_v_Amp')
+        plt.close()
         
-        fig = plt.plot(sim_run.data['time'],mean_epsc)
+        for i in range(len(mean_epsc)):
+            plt.plot(curr.data['time'],mean_epsc[i])
         plt.xlabel('Time (seconds)')
         plt.ylabel('Mean EPSC (pA)')
         plt.title('Mean EPSC across conditions')
-        save_output_plot(fig,plot_folder_path,'EPSC_v_Time')
+        save_output_plot(self.plot_path,'EPSC_v_Time')
+        plt.close()
         
         return (amp,ppr,cv_invsq,mean_epsc)
         
@@ -224,7 +243,7 @@ class Simulation:
             # Vm_t is of shape (no_samples,num_traces)        
             Vm_t = Vm_t[0:len(sim_run.data["time"])]
             if plot:
-                plt.plot(sim_run.data["time"],mean_epsc)
+                plt.plot(sim_run.data["time"],Vm_t)
                 plt.ylabel('Membrane Current (pA)')
                 plt.xlabel('Time, seconds')
                 plt.title('Mean EPSC (across trials)')
@@ -260,6 +279,9 @@ class Simulation:
         plt.plot(np.arange(200)/100.,p_v_func)
         for i in range(len(cav_hits)):
             plt.plot((cav_hits[i],cav_hits[i]),(0,1))
+        plt.ylabel('Probbility of Vesicle Release')
+        plt.xlabel('Calcium Concentration (arb. units)')
+        plt.title('Location of [Ca] response on Hill Function for sequential APs')
         plt.show()
     
     def plot_I_ca_trace(self,sim_run=None,trace=0,synapse=0,average=False):
@@ -307,13 +329,13 @@ class Simulation:
             plt.plot(sim_run.data["time"],Ca_per_syn)
             plt.ylabel('[Ca], arbitrary units')
             plt.xlabel('Time, seconds')
-            plt.title('Mean [Ca] per bouton (across trials)')
+            plt.title('Mean Functional [Ca] per bouton (across trials)')
             plt.show()
             Ca_per_trace = np.mean(Ca_t,axis=2)
             plt.plot(sim_run.data["time"],Ca_per_trace)
             plt.ylabel('[Ca], arbitrary units')
             plt.xlabel('Time, seconds')
-            plt.title('Mean [Ca] per trial (across boutons)')
+            plt.title('Mean Functional [Ca] per trial (across boutons)')
             plt.show()
         else:
             plt.plot(sim_run.data["time"],Ca_t.reshape(cav_activity.shape[0],Ca_t.shape[1]*Ca_t.shape[2]))

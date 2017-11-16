@@ -1,5 +1,6 @@
 import pickle
 import os
+from matplotlib import pyplot as plt
 
 def load_input_pickle(name):
     with open(os.getcwd()+'/input/' + name + '.pkl', 'rb') as f:
@@ -16,8 +17,8 @@ def load_session_pickle(name):
     with open(os.getcwd()+'/session/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
-def save_output_plot(fig,file_loc,filename):
-    fig.savefig(file_loc+filename, format='svg')
+def save_output_plot(file_loc,filename):
+    plt.savefig(file_loc+filename+'.svg', format='svg')
 
 def get_user_params():
 
@@ -87,7 +88,7 @@ def get_user_modulation():
         upper = float(input('Enter upper value > '))
         length = float(input('Enter length of list > '))
 
-        mod_range = [lower + x*(upper-lower)/length for x in range(length)]
+        mod_range = [lower + x*(upper-lower)/(length-1) for x in range(int(length))]
 
     elif reg_list == 'l':
         mod_range = []

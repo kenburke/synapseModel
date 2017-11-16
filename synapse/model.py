@@ -116,6 +116,8 @@ def _sim_ampa_responses(params,quantal_content_per_syn,text_display = False):
     Take "quantal_content_per_syn" and feed as lookup table for a NEURON
     simulation with trains of M stimuli, over N trials and O synapses
     for a quantal_content_per_syn of shape MxNxO = (no_stims,no_trials,no_syn)
+    
+    Either that, or incorporate the math found in this file into the NEURON synapse directly
     '''
     if text_display:
         print("Simulating AMPA Responses...")
