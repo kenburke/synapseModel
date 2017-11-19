@@ -50,6 +50,10 @@ In English, I'm trying to model a lot of neuronal synapses onto a single neuron.
     
 ```
 
+## interactive
+
+This project comes with an interactive Jupyter notebook in ``synapseModel.ipynb`` to explore the advanced applications. See *advanced usage* below.
+
 ## usage
 
 To use the package, first create a conda environment
@@ -164,11 +168,6 @@ plot_hill_func              -- plot where the calcium influx falls on the hill f
 plot_I_ca_trace             -- plot presynaptic calcium influx vs time for a synapse and trial (default is synapse=0, trial=0, average=False. first two can be tuples for more than one synapse or trace)
 _runModel                   -- run the model for a given param set (def = self.params), return simulation_run object (def text_display=False can turn on to see progress in terminal)
 ```
-
-
-## interactive
-
-This project comes with an interactive Jupyter notebook in ``synapseModel.ipynb`` to explore the advanced applications.
 
 
 ## testing
