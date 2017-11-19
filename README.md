@@ -131,17 +131,17 @@ cav_p_open	    :	0.83
 ca_decay	    :	0.05
 num_syn		    :	100
 ca_ec50		    :	0.7
-quantal_size	:	-10
-depletion_on	:	False
-vesicle_prox	:	0.25
+quantal_size        :   -10
+depletion_on        :	False
+vesicle_prox        :	0.25
 stim1_time	    :	0.1
 a_tau		    :	(0.001, 0.005)
 num_trials	    :	300
 pool_tau	    :	1.0
-sweep_length	:	1
+sweep_length        :   1
 num_stim	    :	2
-fs		        :	20000.0
-num_cav_ratio	:	1
+fs              :   20000.0
+num_cav_ratio   :   1
 cav_i		    :	1
 stim_int	    :	0.05
 
