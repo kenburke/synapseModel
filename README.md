@@ -140,8 +140,8 @@ num_trials	    :	300
 pool_tau	    :	1.0
 sweep_length        :   1
 num_stim	    :	2
-fs              :   20000.0
-num_cav_ratio   :   1
+fs                  :   20000.0
+num_cav_ratio       :   1
 cav_i		    :	1
 stim_int	    :	0.05
 
