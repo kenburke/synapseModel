@@ -23,7 +23,7 @@ def save_output_plot(file_loc,filename):
 def get_user_params():
 
     params = load_input_pickle('default')
-    
+
     print("DEFAULT PARAMS :")
 
     for key, val in params.items():
@@ -31,18 +31,23 @@ def get_user_params():
         print("{0}".format(key)+"\t"*l+":\t{0}".format(val))
 
     print("\nNow we will enter our values")
-        
+
     inters = [
         'num_syn',
         'num_cav',
         'num_stim',
         'num_trials',
         'num_cav_ratio'
-        ]
+    ]
+
+    bool_keys = [
+        'depletion_on',
+        'phenom_facil'
+    ]
 
     for k,v in params.items():
 
-        if k=='depletion_on':
+        if k in bool_keys:
             val = input(k+" (use 0/1 for False/True) = ")
             val = bool(int(val))
         elif k=='a_tau':
@@ -51,12 +56,12 @@ def get_user_params():
             val = (float(val1),float(val2))
         else:
             val = float(input(k+" = "))
-        
+
         if k in inters:
             val = int(val)
-        
+
         params[k] = val
-    
+
     print("-----")
     print("")
     print("NEW PARAMS :")
@@ -69,7 +74,7 @@ def get_user_params():
     name = input("Enter Filename (no extension) > ")
     save_input_pickle(params,name)
     print("")
-    
+
     return params
 
 def get_user_modulation():
@@ -78,10 +83,10 @@ def get_user_modulation():
     - which parameter to modulate
     - what range to modulate it over
     '''
-    
+
     mod_param = input('Enter parameter name for range modulation > ').lower()
     reg_list = input('Regularly-spaced range (R) or manual list of values (L)? > ').lower()
-    
+
     if reg_list == 'r':
 
         lower = float(input('Enter lower value > '))
@@ -92,7 +97,7 @@ def get_user_modulation():
 
     elif reg_list == 'l':
         mod_range = []
-        
+
         while True:
             print(mod_range)
             val = input('Enter next value (q to quit) > ')
@@ -100,9 +105,9 @@ def get_user_modulation():
                 break
             else:
                 mod_range.append(float(val))
-    
+
     return (mod_param,mod_range)
-    
+
 
 def dumpclean(obj):
     if type(obj) == dict:
