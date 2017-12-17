@@ -7,26 +7,33 @@ def _sim_CaV_opening(params, no_stims, no_trials, no_syn, text_display = False):
     # Simulate Calcium Channel Opening #
     ####################################
     '''
+
+    phenom_facil = params['phenom_facil']       # True if phenomenological facilitation
+
     if text_display:
         print("Simulating Calcium Channel Opening...")
 
     cav_successes = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
-    cav_openings = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
+    cav_currents = np.zeros(np.array([no_stims,no_trials,no_syn]).astype(int))
 
     for i in range(params["num_cav"]*params["num_cav_ratio"]):
-        cav_successes = np.random.uniform(size=(no_stims,no_trials,no_syn)) < params["cav_p_open"] 
-        cav_openings += cav_successes*params["cav_i"]/params["num_cav_ratio"]    
+        cav_successes = np.random.uniform(size=(no_stims,no_trials,no_syn)) < params["cav_p_open"]
+        cav_currents += cav_successes*params["cav_i"]/params["num_cav_ratio"]
 
     # define exponential decay as [Ca] kernel
     ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
 
-    # generate [Ca](stim_num,trial) by convolving with cav_openings
-    # crop for no_stim length
+    if phenom_facil:
+        #
+        pass
+    else:
+        # generate [Ca](stim_num,trial) by convolving with cav_currents
+        # crop for no_stim length
 
-    Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, arr=cav_openings)
-    Ca_t = Ca_t[0:no_stims,:,:]
+        Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, arr=cav_currents)
+        Ca_t = Ca_t[0:no_stims,:,:]
 
-    return (cav_successes,cav_openings,ca_kernel,Ca_t)
+    return (cav_successes,cav_currents,ca_kernel,Ca_t)
 
 def _sim_vesicle_release(params,Ca_t,cav_successes,text_display = False):
     '''
@@ -50,7 +57,7 @@ def _sim_vesicle_release(params,Ca_t,cav_successes,text_display = False):
 
     # then randomly sample to generate quantal events
     p_v_successes = (np.random.uniform(size=corrected_p.shape) < corrected_p)*1
-    
+
     return(p_v,corrected_p,p_v_successes)
 
 def _sim_vesicle_depletion(params,p_v_successes,no_stims,text_display = False):
@@ -60,9 +67,9 @@ def _sim_vesicle_depletion(params,p_v_successes,no_stims,text_display = False):
     ################################
     (if off, just return p_v_successes as quantal_content_per_syn)
     '''
-    
+
     if(params["depletion_on"]):
-        
+
         if text_display:
             print("Simulating Vesicular Depletion...")
 
@@ -103,20 +110,20 @@ def _sim_vesicle_depletion(params,p_v_successes,no_stims,text_display = False):
         quantal_content_per_syn = release_successes
     else:
         quantal_content_per_syn = p_v_successes
-    
+
     return quantal_content_per_syn
 
 def _sim_ampa_responses(params,quantal_content_per_syn,text_display = False):
     '''
     ###########################
     # Simulate AMPA Responses #
-    ###########################    
-    
+    ###########################
+
     NOTE: If you wanted to integrate into NEURON, here is where you would do it.
     Take "quantal_content_per_syn" and feed as lookup table for a NEURON
     simulation with trains of M stimuli, over N trials and O synapses
     for a quantal_content_per_syn of shape MxNxO = (no_stims,no_trials,no_syn)
-    
+
     Either that, or incorporate the math found in this file into the NEURON synapse directly
     '''
     if text_display:
@@ -132,7 +139,5 @@ def _sim_ampa_responses(params,quantal_content_per_syn,text_display = False):
     epsc_per_syn = quantal_content_per_syn*params["quantal_size"]
 
     epsc_ave = np.mean(epsc,axis=1)
-    
+
     return(quantal_content,epsc,epsc_per_syn,epsc_ave)
-
-
