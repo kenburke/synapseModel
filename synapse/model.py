@@ -24,8 +24,11 @@ def _sim_CaV_opening(params, no_stims, no_trials, no_syn, text_display = False):
     ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
 
     if phenom_facil:
-        #
-        pass
+        # facilitate according to a simple parameter 'A' if previous success
+        Ca_t = np.zeros(np.array(cav_currents.shape))
+        Ca_t += cav_currents
+        Ca_t[1,:,:] *= 1 + a * (1 - Ca_t[1,:,:]) * cav_successes[0,:,:]
+        
     else:
         # generate [Ca](stim_num,trial) by convolving with cav_currents
         # crop for no_stim length
