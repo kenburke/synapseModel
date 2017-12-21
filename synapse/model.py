@@ -24,11 +24,9 @@ def _sim_CaV_opening(params, no_stims, no_trials, no_syn, text_display = False):
     ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
 
     if phenom_facil:
-        # facilitate according to a simple parameter 'A' if previous success
         Ca_t = np.zeros(np.array(cav_currents.shape))
         Ca_t += cav_currents
-        Ca_t[1,:,:] *= 1 + a * (1 - Ca_t[1,:,:]) * cav_successes[0,:,:]
-        
+
     else:
         # generate [Ca](stim_num,trial) by convolving with cav_currents
         # crop for no_stim length
@@ -47,6 +45,8 @@ def _sim_vesicle_release(params,Ca_t,cav_successes,text_display = False):
     if text_display:
         print("Simulating [Ca]-Dependent Vesicle Release...")
 
+    phenom_facil = params['phenom_facil']       # True if phenomenological facilitation
+
     # apply hill function to obtain probability of vesicle release
     p_v = hill(Ca_t,S=1,ec50=params["ca_ec50"],n=params["ca_coop"])
 
@@ -55,6 +55,10 @@ def _sim_vesicle_release(params,Ca_t,cav_successes,text_display = False):
     # release due purely to residual calcium).
     # Also multiply by a scaling factor that indicates the probability
     # that the vesicle is nearby the calcium channel cluster
+
+    if phenom_facil:
+        # facilitate according to a simple parameter 'A' if previous success
+        p_v[1,:,:] *= 1 + params['phenom_param'] * (1 - p_v[1,:,:]) * cav_successes[0,:,:]
 
     corrected_p = p_v*cav_successes*params["vesicle_prox"]
 

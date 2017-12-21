@@ -11,19 +11,19 @@ from .model import _sim_CaV_opening, _sim_vesicle_release, _sim_vesicle_depletio
 class Simulation:
     """
     A class for one iteration of model
-    
+
     Major attributes:
         - params:
             -current set of parameters if you call _runModel (without specifying new parameters)
         - default_runs
             -list of "simulation_run" objs that contain results runs of a simulation, including:
                 -sim_run.params, same format as Simulation.params, for replication
-    
+
     """
 
     def __init__(self, name=None, params=None, params_from_file=False, params_from_user=False):
         """Init by loading param file and running one simulation"""
-        
+
         print("")
         if name:
             self._name = name
@@ -31,7 +31,7 @@ class Simulation:
             self._name = input("Simulation Name : ")
 
         print("Name : "+str(self._name))
-        
+
         self.plot_path = os.getcwd()+'/session/'+self._name+'_plots/'
         try:
             os.mkdir(self.plot_path)
@@ -43,7 +43,7 @@ class Simulation:
             print("WRITING OVER")
             for fn in os.listdir(self.plot_path):
                 os.remove(self.plot_path+fn)
-                  
+
         if params:
             self.params = params
         else:
@@ -54,15 +54,15 @@ class Simulation:
             else:
                 #Define default params
                 self.params = load_input_pickle('default')
-        
+
         self.default_runs = []      # array of simulation runs with default parameters
         self.mod_runs = []          # array of tuples that contain 0) a list of simulation runs
                                     # and 1) a dictionary clarifying which parameter was given
                                     # which value for each run. (for convenience, can also
                                     # determine by comparing the simulation_run.params
                                     # directly
-        
-        
+
+
         print("Running Model with Default Parameters...")
         self.run_default()
         print("")
@@ -74,11 +74,11 @@ class Simulation:
         s = "NAME : "+self._name+"\n\n"
         s += "PARAMS :"
         print(s)
-        
+
         for key, val in self.params.items():
             l = (21-len(key))//7
             print("{0}".format(key)+"\t"*l+":\t{0}".format(val))
-        
+
         s = "\nRuns stored in DEFAULT_RUNS = "+str(len(self.default_runs))
         print(s)
 
@@ -86,15 +86,15 @@ class Simulation:
         print(s)
 
         return ""
-            
+
     def save(self,fn=None):
         """
         Save this model into .pkl file
         """
-        
+
         if (fn==None):
             fn = self._name
-        
+
         print("")
         print("Saving Simulation Object into session/"+fn+".pkl")
         return save_session_pickle(self,fn)
@@ -103,13 +103,13 @@ class Simulation:
     def replicate(self,simulation_run):
         """
         Replicate (i.e. rerun) a simulation with the same params (but different random seed)
-        
+
         INPUT: simulation_run object, already completed
         OUTPUT: simulation_run object from another simulation with same params as input
         """
-        
+
         return self._runModel(params=simulation_run.params)
-    
+
     def run_default(self):
         """
         Runs model with current default parameters (stored in self.params)
@@ -117,18 +117,18 @@ class Simulation:
         OUTPUT: simulation_run object
         """
         sim_run = self._runModel()
-        
+
         self.default_runs.append(sim_run)
-        
+
         return sim_run
-    
+
     def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)/10 for x in range(10)]):
         """
         run a bunch of simulations, modulating one parameter each time
         store output in tuple containing list of simulation run objects and mod_range
         """
         sim_runs = []
- 
+
         print("Running Modulation of "+parameter+" for range:")
         print(mod_range)
         print("")
@@ -138,7 +138,7 @@ class Simulation:
             alt_params = self.params.copy()
             alt_params[parameter] *= mod_range[x]
             sim_runs.append(self._runModel(params=alt_params))
-        
+
         print("")
         print("----")
         print("Storing sim_runs in mod_runs as\n(sim_runs, mod_dict)\nwhere mod_dict = {parameter:mod_range}\n")
@@ -153,18 +153,18 @@ class Simulation:
         takes list of simulation_run objects
         runs a bunch of basic analyses (PPR, CV, etc) and saves plots
         """
-        
+
         if sim_runs is None:
             sim_runs = self.default_runs
-            
+
         print("Analysis Start:")
         print("")
-        
+
         amp = np.zeros(len(sim_runs))
         ppr = np.zeros(len(sim_runs))
         cv_invsq = np.zeros(len(sim_runs))
         mean_epsc = []
-        
+
         for i in range(len(sim_runs)):
             print("Analyzing Run #{0}".format(i+1))
             curr = sim_runs[i]
@@ -174,28 +174,28 @@ class Simulation:
 
             print("Recreating Mean EPSC from Run #{0}".format(i+1))
             mean_epsc.append(self.plot_epsc_trace(sim_run=curr,plot=False))
-        
+
         if notify:
             beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
             beep(2)
-                
+
         print("")
         print("Saving Plots to "+self.plot_path)
-        
+
         plt.plot(amp/amp[-1],ppr/ppr[-1])
         plt.xlabel('EPSC Amplitude (norm.)')
         plt.ylabel('Paired-Pulse Ratio (norm.)')
         plt.title('PPR vs. Amplitude')
         save_output_plot(self.plot_path,'PPR_v_Amp')
         plt.close()
-        
+
         plt.plot(amp/amp[-1],cv_invsq/cv_invsq[-1])
         plt.xlabel('EPSC Amplitude (norm.)')
         plt.ylabel('C.V.^-2 (norm.)')
         plt.title('C.V.^-2 vs. Amplitude')
         save_output_plot(self.plot_path,'CV_v_Amp')
         plt.close()
-        
+
         for i in range(len(mean_epsc)):
             plt.plot(curr.data['time'],mean_epsc[i])
         plt.xlabel('Time (seconds)')
@@ -203,17 +203,17 @@ class Simulation:
         plt.title('Mean EPSC across conditions')
         save_output_plot(self.plot_path,'EPSC_v_Time')
         plt.close()
-        
+
         return (amp,ppr,cv_invsq,mean_epsc)
-        
+
     def plot_epsc_trace(self,sim_run=None,plot=True,average=True):
         """
         plots epscs (either all of them, or average)
         """
-        
+
         if sim_run is None:
             sim_run = self.default_runs[0]
-        
+
         no_samples = float(sim_run.params["fs"])*sim_run.params["sweep_length"]
         no_trials = sim_run.params["num_trials"]
 
@@ -241,7 +241,7 @@ class Simulation:
             Vm_t = np.apply_along_axis(lambda m: np.convolve(m,ampa_kernel), axis=0, \
                 arr=np.mean(epsc_activity[inds],axis=1))
 
-            # Vm_t is of shape (no_samples,num_traces)        
+            # Vm_t is of shape (no_samples,num_traces)
             Vm_t = Vm_t[0:len(sim_run.data["time"])]
             if plot:
                 plt.plot(sim_run.data["time"],Vm_t)
@@ -254,7 +254,7 @@ class Simulation:
             Vm_t = np.apply_along_axis(lambda m: np.convolve(m,ampa_kernel), axis=0, \
                 arr=epsc_activity[inds])
 
-            # Vm_t is of shape (no_samples,num_traces)        
+            # Vm_t is of shape (no_samples,num_traces)
             Vm_t = Vm_t[0:len(sim_run.data["time"]),:]
             if plot:
                 plt.plot(sim_run.data["time"],Vm_t)
@@ -270,12 +270,12 @@ class Simulation:
         to plot where a certain synapse and trace is on the hill function
         (only one trace/synapse at a time)
         """
-    
+
         if sim_run is None:
             sim_run = self.default_runs[0]
-        
+
         cav_hits = sim_run.data["Ca_t"][:,trace,synapse]
-        
+
         p_v_func = hill(np.arange(200)/100.,S=1,ec50=sim_run.params["ca_ec50"],n=sim_run.params["ca_coop"])
         plt.plot(np.arange(200)/100.,p_v_func)
         for i in range(len(cav_hits)):
@@ -284,18 +284,18 @@ class Simulation:
         plt.xlabel('Calcium Concentration (arb. units)')
         plt.title('Location of [Ca] response on Hill Function for sequential APs')
         plt.show()
-    
+
     def plot_I_ca_trace(self,sim_run=None,trace=0,synapse=0,average=False):
         """
         to plot multiple traces or synapses, put in tuple
         """
-        
+
         if sim_run is None:
             sim_run = self.default_runs[0]
-        
+
         trace = np.array([trace]).flatten()
         synapse = np.array([synapse]).flatten()
-        
+
         ## GETTING [Ca](t) (instead of [Ca](stim_num))
         # define exponential decay as [Ca] kernel
         ca_kernel = np.exp(-sim_run.data["time"]/sim_run.params["ca_decay"])
@@ -305,26 +305,26 @@ class Simulation:
         no_samples = float(sim_run.params["fs"])*sim_run.params["sweep_length"]
         no_trials = sim_run.params["num_trials"]
         no_syn = sim_run.params["num_syn"]
-        
+
         cav_activity = np.zeros(np.array([no_samples,no_trials,no_syn]).astype(int))
-        
-        cav_inds = np.array(np.where(sim_run.data["cav_openings"]))
+
+        cav_inds = np.array(np.where(sim_run.data["cav_currents"]))
         big_rows, small_rows, cols, chunks = (
             sim_run.data["ap_inds"][cav_inds[0,:]],
             cav_inds[0,:],
             cav_inds[1,:],
             cav_inds[2,:]
             )
-            
+
         cav_activity[big_rows.astype(int),cols.astype(int),chunks.astype(int)] = \
-            sim_run.data["cav_openings"][small_rows.astype(int),cols.astype(int),chunks.astype(int)]
-        
+            sim_run.data["cav_currents"][small_rows.astype(int),cols.astype(int),chunks.astype(int)]
+
         Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, \
             arr=cav_activity[np.ix_(np.arange(cav_activity.shape[0]),trace,synapse)])
 
-        # Ca_t is of shape (no_samples,num_traces,num_synapses)        
+        # Ca_t is of shape (no_samples,num_traces,num_synapses)
         Ca_t = Ca_t[0:len(sim_run.data["time"]),:,:]
-        
+
         if average:
             Ca_per_syn = np.mean(Ca_t,axis=1)
             plt.plot(sim_run.data["time"],Ca_per_syn)
@@ -345,22 +345,22 @@ class Simulation:
             plt.title('[Ca] for multiple trials')
             plt.show()
 
-    
+
     def _runModel(self,params=None,text_display=False):
         """
         simple model of a synapse
 
         INPUT:
-        -dictionary of parameters for simulation 
+        -dictionary of parameters for simulation
         -text_display toggle
 
-        OUTPUT: 
+        OUTPUT:
         -"simulation" object that contains the following data:
             - params <- dictionary of the format of Simulation.params, for reproducing experiments
             - time
             - ap_times
             - ap_inds
-            - cav_openings
+            - cav_currents
             - ca_kernel
             - Ca_t
             - p_v_successes
@@ -373,7 +373,7 @@ class Simulation:
         if params is None:
             params = self.params
 
-        check_params(params)    
+        check_params(params)
 
         FS = float(params["fs"])
         dt = 1./FS
@@ -383,7 +383,7 @@ class Simulation:
         no_syn = params["num_syn"]
         time = np.arange(no_samples)*dt
 
-        # array of AP times    
+        # array of AP times
         ap_times = np.zeros(math.floor(no_samples))
         ap_inds = np.zeros(no_stims)
 
@@ -397,13 +397,13 @@ class Simulation:
                 print("INDEXERROR: {0}".format(err))
                 print("Stimulation parameters may exceed length of sweep")
                 return
-        
+
         ####################################
         # Simulate Calcium Channel Opening #
         ####################################
-        cav_successes,cav_openings,ca_kernel,Ca_t = _sim_CaV_opening(
+        cav_successes,cav_currents,ca_kernel,Ca_t = _sim_CaV_opening(
             params, no_stims, no_trials, no_syn, text_display=text_display)
-            
+
         #########################################
         # Simulate Ca-Dependent Vesicle Release #
         ########################################
@@ -421,14 +421,14 @@ class Simulation:
 
         ###########################
         # Simulate AMPA Responses #
-        ###########################    
+        ###########################
         quantal_content,epsc,epsc_per_syn,epsc_ave = _sim_ampa_responses(
             params,quantal_content_per_syn,text_display=text_display)
 
         #####################
         # Packaging Results #
-        #####################   
-        
+        #####################
+
         if text_display:
             print("Packaging Results....")
 
@@ -436,7 +436,7 @@ class Simulation:
             "time" : time,
             "ap_times" : ap_times,
             "ap_inds" : ap_inds,
-            "cav_openings" : cav_openings,
+            "cav_currents" : cav_currents,
             "ca_kernel" : ca_kernel,
             "Ca_t" : Ca_t,
             "p_v_successes" : p_v_successes,
@@ -446,11 +446,11 @@ class Simulation:
             "epsc" : epsc,
             "epsc_ave" : epsc_ave
             }
-        
+
         sim_run = simulation_run(params,data)
-        
+
         return sim_run
-        
+
 
 class simulation_run:
     """
@@ -460,14 +460,14 @@ class simulation_run:
     def __init__(self, params, data):
         self.params = params
         self.data = data
-            
+
     def __str__(self):
         print(self.__repr__())
         print("\tPARAMS...")
         for key, val in self.params.items():
             l = (21-len(key))//7
             print("\t{0}".format(key)+"\t"*l+":\t{0}".format(val))
-        
+
         print("\n\tDATA...")
         for key, val in self.data.items():
             l = (21-len(key))//7
