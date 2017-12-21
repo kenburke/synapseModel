@@ -186,6 +186,7 @@ class Simulation:
         plt.xlabel('EPSC Amplitude (norm.)')
         plt.ylabel('Paired-Pulse Ratio (norm.)')
         plt.title('PPR vs. Amplitude')
+        plt.axis([0.0,1.1,0.0,3.0])
         save_output_plot(self.plot_path,'PPR_v_Amp')
         plt.close()
 
@@ -193,6 +194,7 @@ class Simulation:
         plt.xlabel('EPSC Amplitude (norm.)')
         plt.ylabel('C.V.^-2 (norm.)')
         plt.title('C.V.^-2 vs. Amplitude')
+        plt.axis([0.0,1.1,0.0,3.0])
         save_output_plot(self.plot_path,'CV_v_Amp')
         plt.close()
 
