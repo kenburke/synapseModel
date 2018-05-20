@@ -108,6 +108,36 @@ def get_user_modulation():
 
     return (mod_param,mod_range)
 
+def get_synapse_range():
+    '''
+    gets relevant input for Simulation._runModel with nonuniform_parameter turned on:
+    - which parameter to modulate
+    - what range to modulate it over
+    '''
+
+    mod_param = input('Enter parameter name for range modulation > ').lower()
+    reg_list = input('Regularly-spaced range (R) or manual list of values (L)? > ').lower()
+
+    if reg_list == 'r':
+
+        lower = float(input('Enter lower value > '))
+        upper = float(input('Enter upper value > '))
+        length = float(input('Enter length of list > '))
+
+        mod_range = [lower + x*(upper-lower)/(length-1) for x in range(int(length))]
+
+    elif reg_list == 'l':
+        mod_range = []
+
+        while True:
+            print(mod_range)
+            val = input('Enter next value (q to quit) > ')
+            if val.lower() == 'q':
+                break
+            else:
+                mod_range.append(float(val))
+
+    return (mod_param,mod_range)
 
 def dumpclean(obj):
     if type(obj) == dict:

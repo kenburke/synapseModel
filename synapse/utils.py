@@ -348,13 +348,14 @@ class Simulation:
             plt.show()
 
 
-    def _runModel(self,params=None,text_display=False):
+    def _runModel(self,params=None,text_display=False,nonuniform_parameter=False):
         """
         simple model of a synapse
 
         INPUT:
         -dictionary of parameters for simulation
         -text_display toggle
+        -toggle to distribute a parameter across synapses
 
         OUTPUT:
         -"simulation" object that contains the following data:
@@ -374,6 +375,9 @@ class Simulation:
 
         if params is None:
             params = self.params
+            
+        if nonuniform_parameter:
+            
 
         check_params(params)
 
