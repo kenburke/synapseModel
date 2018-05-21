@@ -103,7 +103,8 @@ class Simulation:
     def replicate(self,simulation_run):
         """
         Replicate (i.e. rerun) a simulation with the same params (but different random seed)
-
+        WARNING: DOES NOT CURRENTLY REPLICATE NONUNIFORM SYNAPSES
+        
         INPUT: simulation_run object, already completed
         OUTPUT: simulation_run object from another simulation with same params as input
         """
@@ -122,9 +123,10 @@ class Simulation:
 
         return sim_run
 
-    def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)/10 for x in range(10)]):
+    def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)/10 for x in range(10)],synapse_distr=False):
         """
         run a bunch of simulations, modulating one parameter each time
+        synapse_distr should be a tuple from i_o.get_synapse_range()
         store output in tuple containing list of simulation run objects and mod_range
         """
         sim_runs = []
@@ -137,7 +139,7 @@ class Simulation:
             print("Run #"+str(x+1)+" with "+parameter+" at "+str(mod_range[x])+" of default")
             alt_params = self.params.copy()
             alt_params[parameter] *= mod_range[x]
-            sim_runs.append(self._runModel(params=alt_params))
+            sim_runs.append(self._runModel(params=alt_params,nonuniform_parameter=synapse_distr))
 
         print("")
         print("----")
@@ -356,6 +358,7 @@ class Simulation:
         -dictionary of parameters for simulation
         -text_display toggle
         -toggle to distribute a parameter across synapses
+            --> If tuple is passed, it is assumed to be output of get_synapse_range()
 
         OUTPUT:
         -"simulation" object that contains the following data:
@@ -376,10 +379,10 @@ class Simulation:
         if params is None:
             params = self.params
             
-        if nonuniform_parameter:
-            
-
         check_params(params)
+
+        if nonuniform_parameter:
+            syn_param,syn_range = nonuniform_parameter
 
         FS = float(params["fs"])
         dt = 1./FS
@@ -407,8 +410,23 @@ class Simulation:
         ####################################
         # Simulate Calcium Channel Opening #
         ####################################
-        cav_successes,cav_currents,ca_kernel,Ca_t = _sim_CaV_opening(
-            params, no_stims, no_trials, no_syn, text_display=text_display)
+        if nonuniform_parameter:
+            #NOTE: As warned, rounding-up error if no_syn not multiple of len(syn_range)
+            syn_set_size = int(no_syn / len(syn_range)) + 1
+            for x in range(len(syn_range)):
+                params[syn_param] = syn_range[x]
+                calcium_temp = _sim_CaV_opening(
+                    params, no_stims, no_trials, syn_set_size, text_display=text_display)
+                if x == 0:
+                    cav_successes,cav_currents,ca_kernel,Ca_t = calcium_temp
+                else:
+                    cav_successes = np.dstack((cav_successes,calcium_temp[0]))
+                    cav_currents = np.dstack((cav_currents,calcium_temp[1]))
+                    Ca_t = np.dstack((Ca_t,calcium_temp[3]))
+
+        else:
+            cav_successes,cav_currents,ca_kernel,Ca_t = _sim_CaV_opening(
+                params, no_stims, no_trials, no_syn, text_display=text_display)
 
         #########################################
         # Simulate Ca-Dependent Vesicle Release #

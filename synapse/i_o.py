@@ -115,13 +115,14 @@ def get_synapse_range():
     - what range to modulate it over
     '''
 
-    mod_param = input('Enter parameter name for range modulation > ').lower()
+    mod_param = input('Enter parameter name to distribute over synapses > ').lower()
     reg_list = input('Regularly-spaced range (R) or manual list of values (L)? > ').lower()
 
     if reg_list == 'r':
 
         lower = float(input('Enter lower value > '))
         upper = float(input('Enter upper value > '))
+        print("WARNING : For best results ensure synapse number is a multiple of this range...")
         length = float(input('Enter length of list > '))
 
         mod_range = [lower + x*(upper-lower)/(length-1) for x in range(int(length))]
