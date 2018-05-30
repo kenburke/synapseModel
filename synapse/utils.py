@@ -35,7 +35,7 @@ class Simulation:
         self.plot_path = os.getcwd()+'/session/'+self._name+'_plots/'
         try:
             os.mkdir(self.plot_path)
-        except (FileExistsError):
+        except (FileExistsError, FileNotFoundError):
             beep = lambda x: os.system("echo '\a';sleep 0.5;" * x)
             beep(1)
             print("WARNING : FOLDER PATH ALREADY EXISTS")
