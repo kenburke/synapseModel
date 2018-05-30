@@ -494,23 +494,41 @@ class Simulation:
 
         if text_display:
             print("Packaging Results....")
+        
+        if params["diffusion_model"]:
+            data = {
+                "time" : time,
+                "ap_times" : ap_times,
+                "ap_inds" : ap_inds,
+                "cav_successes" : cav_successes,
+                "cav_currents" : cav_currents,
+                "ca_kernel" : ca_kernel,
+                "ca_initial" : ca_initial,
+                "Ca_t" : Ca_t,
+                "p_v_successes" : p_v_successes,
+                "quantal_content_per_syn" : quantal_content_per_syn,
+                "epsc_per_syn" : epsc_per_syn,
+                "quantal_content" : quantal_content,
+                "epsc" : epsc,
+                "epsc_ave" : epsc_ave
+                }
+        else:
+            data = {
+                "time" : time,
+                "ap_times" : ap_times,
+                "ap_inds" : ap_inds,
+                "cav_successes" : cav_successes,
+                "cav_currents" : cav_currents,
+                "ca_kernel" : ca_kernel,
+                "Ca_t" : Ca_t,
+                "p_v_successes" : p_v_successes,
+                "quantal_content_per_syn" : quantal_content_per_syn,
+                "epsc_per_syn" : epsc_per_syn,
+                "quantal_content" : quantal_content,
+                "epsc" : epsc,
+                "epsc_ave" : epsc_ave
+                }
 
-        data = {
-            "time" : time,
-            "ap_times" : ap_times,
-            "ap_inds" : ap_inds,
-            "cav_successes" : cav_successes,
-            "cav_currents" : cav_currents,
-            "ca_kernel" : ca_kernel,
-            "ca_initial" : ca_initial,
-            "Ca_t" : Ca_t,
-            "p_v_successes" : p_v_successes,
-            "quantal_content_per_syn" : quantal_content_per_syn,
-            "epsc_per_syn" : epsc_per_syn,
-            "quantal_content" : quantal_content,
-            "epsc" : epsc,
-            "epsc_ave" : epsc_ave
-            }
 
         sim_run = simulation_run(params,data)
 
