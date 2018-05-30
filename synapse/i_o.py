@@ -42,7 +42,8 @@ def get_user_params():
 
     bool_keys = [
         'depletion_on',
-        'phenom_facil'
+        'phenom_facil',
+        'diffusion_model'
     ]
 
     for k,v in params.items():
@@ -136,7 +137,10 @@ def get_synapse_range():
             if val.lower() == 'q':
                 break
             else:
-                mod_range.append(float(val))
+                if mod_param=='num_cav_ratio' or mod_param=="num_cav":
+                    mod_range.append(int(val))
+                else:
+                    mod_range.append(float(val))
 
     return (mod_param,mod_range)
 

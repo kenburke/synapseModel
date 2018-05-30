@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import datetime
 from .i_o import load_input_pickle, save_session_pickle, get_user_params, save_output_plot
 from .check import check_params
-from .math_funcs import ampa, hill
+from .math_funcs import ampa, hill, diffuse
 from .model import _sim_CaV_opening, _sim_vesicle_release, _sim_vesicle_depletion, _sim_ampa_responses
 
 class Simulation:
@@ -123,7 +123,7 @@ class Simulation:
 
         return sim_run
 
-    def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)/10 for x in range(10)],synapse_distr=False):
+    def run_modulation(self,parameter="cav_p_open",mod_range=[(x+1)/20 for x in range(20)],synapse_distr=False):
         """
         run a bunch of simulations, modulating one parameter each time
         synapse_distr should be a tuple from i_o.get_synapse_range()
@@ -296,7 +296,9 @@ class Simulation:
 
         if sim_run is None:
             sim_run = self.default_runs[0]
-
+        
+        diffusion_model = sim_run.params["diffusion_model"]
+        
         trace = np.array([trace]).flatten()
         synapse = np.array([synapse]).flatten()
 
@@ -322,9 +324,30 @@ class Simulation:
 
         cav_activity[big_rows.astype(int),cols.astype(int),chunks.astype(int)] = \
             sim_run.data["cav_currents"][small_rows.astype(int),cols.astype(int),chunks.astype(int)]
-
-        Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, \
-            arr=cav_activity[np.ix_(np.arange(cav_activity.shape[0]),trace,synapse)])
+        
+        if diffusion_model:
+            distances = np.zeros(np.array(cav_activity.shape))
+            distances += sim_run.params['r_cav_ves']
+                
+            diffusion_params = [
+                'r_cav_ves',
+                'cav_i',
+                'd_ca',
+                'k_on',
+                'k_d',
+                'B_total',
+                'ca_basal'
+                ]
+                
+            ordered_params = [sim_run.params[x] for x in diffusion_params]            
+            ordered_params[0] = distances
+            ordered_params[1] = cav_activity
+            ca_initial = diffuse(*ordered_params) + sim_run.params['ca_basal'] # in micromolar
+            Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, \
+                arr=ca_initial[np.ix_(np.arange(ca_initial.shape[0]),trace,synapse)])
+        else:
+            Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, \
+                arr=cav_activity[np.ix_(np.arange(cav_activity.shape[0]),trace,synapse)])
 
         # Ca_t is of shape (no_samples,num_traces,num_synapses)
         Ca_t = Ca_t[0:len(sim_run.data["time"]),:,:]
@@ -412,25 +435,41 @@ class Simulation:
         ####################################
         if nonuniform_parameter:
             #NOTE: As warned, rounding-up error if no_syn not multiple of len(syn_range)
-            syn_set_size = int(no_syn / len(syn_range)) + 1
+            r_ves_key = {
+                1 : 15,
+                2 : 23.3,
+                3 : 29.2,
+                4 : 33.8,
+                5 : 37.6,
+                }
+            syn_set_size = int(no_syn / (len(syn_range))) + 1
             for x in range(len(syn_range)):
                 params[syn_param] = syn_range[x]
+                params['r_cav_ves'] = r_ves_key[syn_range[x]]
                 calcium_temp = _sim_CaV_opening(
                     params, no_stims, no_trials, syn_set_size, text_display=text_display)
-                if x == 0:
-                    cav_successes,cav_currents,ca_kernel,Ca_t = calcium_temp
+                if (x == 0):
+                    if params["diffusion_model"]:
+                        cav_successes,cav_currents,ca_initial,ca_kernel,Ca_t = calcium_temp
+                    else:
+                        cav_successes,cav_currents,ca_kernel,Ca_t = calcium_temp
                 else:
                     cav_successes = np.dstack((cav_successes,calcium_temp[0]))
                     cav_currents = np.dstack((cav_currents,calcium_temp[1]))
-                    Ca_t = np.dstack((Ca_t,calcium_temp[3]))
-
+                    ca_initial = np.dstack((ca_initial,calcium_temp[2]))
+                    Ca_t = np.dstack((Ca_t,calcium_temp[4]))
+                    
         else:
-            cav_successes,cav_currents,ca_kernel,Ca_t = _sim_CaV_opening(
-                params, no_stims, no_trials, no_syn, text_display=text_display)
-
+            if params["diffusion_model"]:
+                cav_successes,cav_currents,ca_initial,ca_kernel,Ca_t = _sim_CaV_opening(
+                    params, no_stims, no_trials, no_syn, text_display=text_display)
+            else:
+                cav_successes,cav_currents,ca_kernel,Ca_t = _sim_CaV_opening(
+                    params, no_stims, no_trials, no_syn, text_display=text_display)
+              
         #########################################
         # Simulate Ca-Dependent Vesicle Release #
-        ########################################
+        #########################################
         p_v,corrected_p,p_v_successes = _sim_vesicle_release(
             params,Ca_t,cav_successes,text_display=text_display)
 
@@ -460,8 +499,10 @@ class Simulation:
             "time" : time,
             "ap_times" : ap_times,
             "ap_inds" : ap_inds,
+            "cav_successes" : cav_successes,
             "cav_currents" : cav_currents,
             "ca_kernel" : ca_kernel,
+            "ca_initial" : ca_initial,
             "Ca_t" : Ca_t,
             "p_v_successes" : p_v_successes,
             "quantal_content_per_syn" : quantal_content_per_syn,

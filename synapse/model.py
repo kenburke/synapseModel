@@ -1,14 +1,19 @@
 import numpy as np
-from .math_funcs import hill
+from .math_funcs import hill, diffuse
 
 def _sim_CaV_opening(params, no_stims, no_trials, no_syn, text_display = False):
     '''
     ####################################
     # Simulate Calcium Channel Opening #
     ####################################
+    Note that subsequent calcium concentration modelling depends on model detail level:
+        -phenom facil = [Ca] ~ cav currents
+        -core model = [Ca] ~ cav_currents convolved with exponential decay
+        -diffusion model = [Ca] ~ cav_currents diffused along distance and decayed
     '''
 
     phenom_facil = params['phenom_facil']       # True if phenomenological facilitation
+    diffusion_model = params['diffusion_model']       # True if modeling diffusion and synt7
 
     if text_display:
         print("Simulating Calcium Channel Opening...")
@@ -20,32 +25,81 @@ def _sim_CaV_opening(params, no_stims, no_trials, no_syn, text_display = False):
         cav_successes = np.random.uniform(size=(no_stims,no_trials,no_syn)) < params["cav_p_open"]
         cav_currents += cav_successes*params["cav_i"]/params["num_cav_ratio"]
 
-    # define exponential decay as [Ca] kernel
-    ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
-
     if phenom_facil:
+        # calcium concentration defined only by CaV currents
         Ca_t = np.zeros(np.array(cav_currents.shape))
         Ca_t += cav_currents
+    
+    elif diffusion_model:
+        if text_display:
+            print("Simulating [Ca] Diffusion...")
+            
+        # define decay time constant
+        ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
+        
+        # define initial calcium concentration at given distance
+        Ca_t = np.zeros(np.array(cav_currents.shape))
+        diffusion_params = [
+            'r_cav_ves',
+            'cav_i',
+            'd_ca',
+            'k_on',
+            'k_d',
+            'B_total',
+            'ca_basal'
+            ]
+            
+        ordered_params = [params[x] for x in diffusion_params]
+        
+        # set distance to be matrix of same size as cav_currents (stim_num,trial,no_syn)
+        distances = np.zeros(np.array(cav_currents.shape))
+        distances += params['r_cav_ves']
+        
+        # NOTE: IF YOU WANT TO MAKE DISTANCES RANDOM, here is easiest place to do it
+        # put distance and cav_currents matrices into ordered_params at correct location
+        ordered_params[0] = distances
+        ordered_params[1] = cav_currents
+        
+        # NOTE: This assumes params['cav_i'] in units of pA (unlike core model)
+        ca_initial = diffuse(*ordered_params) + params['ca_basal'] # in micromolar
+        
+        # generate [Ca](stim_num,trial) by convolving ca_kernel with ca_intial
+        # crop for no_stim length
+        # this mimics decay due to pumps / other extrusion mechanisms
+        
+        Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, arr=ca_initial)
+        Ca_t = Ca_t[0:no_stims,:,:]
 
     else:
+        # define exponential decay as [Ca] kernel
+        ca_kernel = np.exp(-params["stim_int"]*np.arange(no_stims)/params["ca_decay"])
+    
         # generate [Ca](stim_num,trial) by convolving with cav_currents
         # crop for no_stim length
 
         Ca_t = np.apply_along_axis(lambda m: np.convolve(m,ca_kernel), axis=0, arr=cav_currents)
         Ca_t = Ca_t[0:no_stims,:,:]
-
-    return (cav_successes,cav_currents,ca_kernel,Ca_t)
+    if diffusion_model:
+        return (cav_successes,cav_currents,ca_initial,ca_kernel,Ca_t)
+    else:        
+        return (cav_successes,cav_currents,ca_kernel,Ca_t)
 
 def _sim_vesicle_release(params,Ca_t,cav_successes,text_display = False):
     '''
     #########################################
     # Simulate Ca-Dependent Vesicle Release #
-    ########################################
+    #########################################
+    Note that facilitation has different mechanisms:
+        -phenom model = facilitation through nonlinear scaling
+        -core model = facilitation through shift along release function
+        -diffusion model = facilitation through secondary high-affinity hill function (e.g. Synt7)
     '''
+    
     if text_display:
         print("Simulating [Ca]-Dependent Vesicle Release...")
 
     phenom_facil = params['phenom_facil']       # True if phenomenological facilitation
+    diffusion_model = params['diffusion_model']       # True if modeling diffusion and synt7
 
     # apply hill function to obtain probability of vesicle release
     p_v = hill(Ca_t,S=1,ec50=params["ca_ec50"],n=params["ca_coop"])
@@ -53,15 +107,24 @@ def _sim_vesicle_release(params,Ca_t,cav_successes,text_display = False):
     # extract values corresponding to action-potential timepoints
     # multiplied by CaV opening success/failure (to prevent vesicle
     # release due purely to residual calcium).
-    # Also multiply by a scaling factor that indicates the probability
-    # that the vesicle is nearby the calcium channel cluster
+    # Also multiply by a scaling factor to indicate maximum release probability
 
     if phenom_facil:
         # facilitate according to a simple parameter 'A' if previous success
         p_v[1,:,:] *= 1 + params['phenom_param'] * (1 - p_v[1,:,:]) * cav_successes[0,:,:]
-
-    corrected_p = p_v*cav_successes*params["vesicle_prox"]
-
+        corrected_p = p_v*cav_successes*params["vesicle_prox"]
+        
+    elif diffusion_model:
+        # facilitate according to secondary hill function
+        # NOTE: because of decay, second pulse is likely facilitated already
+        # in a way that depends on first hill function
+        # FIRST: scale according to 
+        corrected_p = p_v*cav_successes*params["vesicle_prox"]
+        corrected_p *= hill(Ca_t,S=params["S_facil"],ec50=params["ca_ec50_facil"],n=params["ca_coop_facil"]) + 1.0
+        
+    else:
+        corrected_p = p_v*cav_successes*params["vesicle_prox"]
+        
     # then randomly sample to generate quantal events
     p_v_successes = (np.random.uniform(size=corrected_p.shape) < corrected_p)*1
 
