@@ -71,6 +71,10 @@ def test_runModel_different_combinations(param_base,pd=param_dict(r_range)):
         
         try:
             SIM = utils.Simulation(name = 'test', params = alt_params)
+            alt_params['diffusion_model'] = True
+            SIM = utils.Simulation(name = 'test', params = alt_params)
+            alt_params['diffusion_model'], alt_params['phenom_param'] = False, True
+            SIM = utils.Simulation(name = 'test', params = alt_params)
         except:
             print("Parameters : ")
             for key in alt_params.keys():
